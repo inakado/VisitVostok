@@ -18,7 +18,22 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'streetviewpixels-pa.googleapis.com',
       },
-      // Добавьте другие паттерны, если нужны другие домены
+      {
+        protocol: 'https',
+        hostname: 'lh4.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh6.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gps-proxy.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'gps-cs-s.googleusercontent.com',
+      },
     ],
   },
 };
