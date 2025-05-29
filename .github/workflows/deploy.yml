@@ -63,6 +63,7 @@ jobs:
           
           # Проверить изменения в package.json для условной переустановки
           PACKAGE_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "(package\.json|package-lock\.json)" || echo "")
+          API_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "src/app/api/" || echo "")
           
           if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -d "node_modules" ]; then
             echo "🔄 Package dependencies changed or node_modules missing - reinstalling..."
@@ -76,19 +77,19 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
           
-          # Проверить нужен ли импорт данных
-          PLACE_COUNT=$(npx prisma db execute --schema prisma/schema.prisma --stdin <<< "SELECT COUNT(*) as count FROM \"Place\";" | grep -o '[0-9]\+' | tail -1 || echo "0")
+          # Проверить нужен ли импорт данных (упрощенная проверка)
+          PLACE_COUNT=$(npx prisma db execute --url "$DATABASE_URL" --stdin <<< "SELECT COUNT(*) FROM \"Place\";" 2>/dev/null | grep -E "^\s*[0-9]+\s*$" | head -1 | tr -d ' ' || echo "0")
           echo "📊 Places in database: $PLACE_COUNT"
           
-          if [ "$PLACE_COUNT" -lt "100" ]; then
+          if [ -z "$PLACE_COUNT" ] || [ "$PLACE_COUNT" -eq "0" ] || [ "$PLACE_COUNT" -lt "100" ]; then
             echo "📥 Importing places data..."
             npm run import-places || echo "Import failed, continuing..."
           else
-            echo "✅ Database already populated"
+            echo "✅ Database already populated ($PLACE_COUNT places)"
           fi
           
-          # Билд только если нужно
-          if [ ! -d ".next" ] || [ ! -z "$PACKAGE_CHANGED" ]; then
+          # Билд если изменились зависимости, API или нет готовой сборки
+          if [ ! -d ".next" ] || [ ! -z "$PACKAGE_CHANGED" ] || [ ! -z "$API_CHANGED" ]; then
             echo "🔨 Building application..."
             npm run build
           else
