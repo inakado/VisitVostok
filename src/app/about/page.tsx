@@ -83,7 +83,7 @@ export default function AboutPage() {
         {/* Секция Героя */}
         <section className="relative w-full h-[70vh] md:h-[80vh] overflow-hidden bg-blue-900">
           <Image
-            src="/hero-image-about.webp"
+            src="/about-hero.webp"
             alt="Пейзаж Дальнего Востока"
             fill
             priority

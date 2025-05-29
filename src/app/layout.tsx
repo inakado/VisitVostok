@@ -153,6 +153,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ВИЗИТВОСТОК" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta property="og:image" content="https://visitvostok.ru/seo_banner.webp" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="ВИЗИТВОСТОК - Дальний Восток России" />
+        <meta name="twitter:image" content="https://visitvostok.ru/seo_banner.webp" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
