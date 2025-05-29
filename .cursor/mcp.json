@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "Prisma": {
+      "command": "npx",
+      "args": ["-y", "prisma", "mcp"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+} 
