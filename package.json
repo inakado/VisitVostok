@@ -12,7 +12,9 @@
     "import-places": "tsx scripts/import-places.js",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "deploy:quick": "npm run build && pm2 restart visitvostok",
+    "deploy:full": "npm ci && npm run build && pm2 restart visitvostok"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",

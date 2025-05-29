@@ -104,12 +104,12 @@ export default function AboutPage() {
                где путешественники по Дальнему Востоку общаются на любые темы.
             </p>
             <div className="flex justify-center gap-8 flex-wrap">
-               <Link href="ВАША_ССЫЛКА_НА_КАНАЛ_В_TELEGRAM" target="_blank" rel="noopener noreferrer">
+               <Link href="https://t.me/+HTIR_cijBXVjYWIy" target="_blank" rel="noopener noreferrer">
                   <Button size="lg" className="bg-[#0088CC] hover:bg-[#0077B3] text-white text-lg px-8 py-6 rounded-full shadow-lg flex items-center gap-2">
                      <FaTelegramPlane className="w-6 h-6" /> Канал в Telegram
                   </Button>
                </Link>
-                <Link href="ВАША_ССЫЛКА_НА_ФОРУМ_В_TELEGRAM" target="_blank" rel="noopener noreferrer">
+                <Link href="https://t.me/+_hKmfgSORrY2YWZi" target="_blank" rel="noopener noreferrer">
                   <Button size="lg" className="bg-[#0088CC] hover:bg-[#0077B3] text-white text-lg px-8 py-6 rounded-full shadow-lg flex items-center gap-2">
                      <FaTelegramPlane className="w-6 h-6" /> Форум Путешественников
                   </Button>

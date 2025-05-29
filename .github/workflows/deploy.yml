@@ -19,6 +19,14 @@ jobs:
         node-version: '20'
         cache: 'npm'
     
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    
     - name: Install dependencies
       run: npm ci
     
@@ -47,17 +55,47 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
           cd /var/www/visitvostok
-          git pull origin main
-          # Удалить node_modules и package-lock для чистой установки
-          rm -rf node_modules package-lock.json .next
-          # Установить все зависимости (не только production)
-          npm install
+          
+          # Принудительно сбросить локальные изменения и обновить код
+          git fetch origin main
+          git reset --hard origin/main
+          git clean -fd
+          
+          # Проверить изменения в package.json для условной переустановки
+          PACKAGE_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "(package\.json|package-lock\.json)" || echo "")
+          
+          if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -d "node_modules" ]; then
+            echo "🔄 Package dependencies changed or node_modules missing - reinstalling..."
+            rm -rf node_modules package-lock.json
+            npm ci
+          else
+            echo "📦 Dependencies unchanged - skipping reinstall"
+          fi
+          
+          # Prisma операции
           npx prisma generate
           npx prisma migrate deploy
-          npm run build
-          # Импорт данных если они еще не загружены
-          if [ ! -f "/tmp/data_imported.flag" ]; then
-            npm run import-places || echo "Import script not found"
-            touch /tmp/data_imported.flag
+          
+          # Проверить нужен ли импорт данных
+          PLACE_COUNT=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as count FROM \"Place\";" | grep -o '[0-9]\+' | tail -1 || echo "0")
+          echo "📊 Places in database: $PLACE_COUNT"
+          
+          if [ "$PLACE_COUNT" -lt "100" ]; then
+            echo "📥 Importing places data..."
+            npm run import-places || echo "Import failed, continuing..."
+          else
+            echo "✅ Database already populated"
           fi
-          pm2 restart visitvostok || pm2 start npm --name "visitvostok" -- start 
+          
+          # Билд только если нужно
+          if [ ! -d ".next" ] || [ ! -z "$PACKAGE_CHANGED" ]; then
+            echo "🔨 Building application..."
+            npm run build
+          else
+            echo "🏗️ Build unchanged - skipping"
+          fi
+          
+          # Перезапуск приложения
+          pm2 restart visitvostok || pm2 start npm --name "visitvostok" -- start
+          pm2 save
+        command_timeout: 15m 
