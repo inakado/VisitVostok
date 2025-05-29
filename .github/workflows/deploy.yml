@@ -49,6 +49,12 @@ jobs:
           cd /var/www/visitvostok
           git pull origin main
           npm ci --production
+          npx prisma generate
+          npx prisma migrate deploy
           npm run build
-          npm run db:migrate:deploy
+          # Импорт данных если они еще не загружены
+          if [ ! -f "/tmp/data_imported.flag" ]; then
+            npm run import-places || echo "Import script not found"
+            touch /tmp/data_imported.flag
+          fi
           pm2 restart visitvostok || pm2 start npm --name "visitvostok" -- start 
