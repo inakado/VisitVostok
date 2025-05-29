@@ -77,26 +77,29 @@ jobs:
           npx prisma migrate deploy
           
           # Проверить нужен ли импорт данных (проверяем уникальные места)
-          UNIQUE_PLACES=$(npx prisma db execute --url "$DATABASE_URL" --stdin <<< "SELECT COUNT(DISTINCT lat || ',' || lng) FROM \"Place\";" 2>/dev/null | grep -E "^\s*[0-9]+\s*$" | head -1 | tr -d ' ' || echo "0")
+          UNIQUE_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(DISTINCT CONCAT(lat::text, ',', lng::text)) as unique_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+          TOTAL_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as total_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+          
+          echo "📊 Всего мест в базе: $TOTAL_PLACES"
           echo "📊 Уникальных мест в базе: $UNIQUE_PLACES"
           
-          if [ -z "$UNIQUE_PLACES" ] || [ "$UNIQUE_PLACES" -eq "0" ] || [ "$UNIQUE_PLACES" -lt "350" ]; then
+          # Если база пустая или мало мест - импортируем
+          if [ "$UNIQUE_PLACES" -eq "0" ] || [ "$UNIQUE_PLACES" -lt "350" ]; then
             echo "📥 Importing places data..."
             npm run import-places || echo "Import failed, continuing..."
             
-            # Проверяем на дубликаты и очищаем если нужно
-            echo "🧹 Checking for duplicates..."
-            npm run check-duplicates
-            
-            TOTAL_PLACES=$(npx prisma db execute --url "$DATABASE_URL" --stdin <<< "SELECT COUNT(*) FROM \"Place\";" 2>/dev/null | grep -E "^\s*[0-9]+\s*$" | head -1 | tr -d ' ' || echo "0")
-            UNIQUE_AFTER=$(npx prisma db execute --url "$DATABASE_URL" --stdin <<< "SELECT COUNT(DISTINCT lat || ',' || lng) FROM \"Place\";" 2>/dev/null | grep -E "^\s*[0-9]+\s*$" | head -1 | tr -d ' ' || echo "0")
-            
-            if [ "$TOTAL_PLACES" -gt "$UNIQUE_AFTER" ]; then
-              echo "🚨 Обнаружены дубликаты ($TOTAL_PLACES записей vs $UNIQUE_AFTER уникальных). Очищаю..."
-              npm run clean-duplicates
-            fi
+            # Обновляем счетчики после импорта
+            TOTAL_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as total_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+            UNIQUE_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(DISTINCT CONCAT(lat::text, ',', lng::text)) as unique_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+          fi
+          
+          # Проверяем на дубликаты и очищаем если нужно
+          echo "🧹 Checking for duplicates..."
+          if [ "$TOTAL_PLACES" -gt "$UNIQUE_PLACES" ] && [ "$UNIQUE_PLACES" -gt "0" ]; then
+            echo "🚨 Обнаружены дубликаты ($TOTAL_PLACES записей vs $UNIQUE_PLACES уникальных). Очищаю..."
+            npm run clean-duplicates
           else
-            echo "✅ Database already populated ($UNIQUE_PLACES unique places)"
+            echo "✅ Database clean ($TOTAL_PLACES records, $UNIQUE_PLACES unique places)"
           fi
           
           # Принудительная сборка при каждом деплое для надежности
