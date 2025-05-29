@@ -2,11 +2,11 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Place, Review } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Star, MapPin, Clock, Phone, Globe } from "lucide-react";
-import Link from "next/link";
 
 interface PlaceWithDetails extends Place {
   reviews: Review[];
@@ -17,6 +17,7 @@ interface PlaceWithDetails extends Place {
 
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
 
   const [place, setPlace] = useState<PlaceWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,21 +33,25 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   }, [id]);
 
   if (loading) {
-    return <div className="p-4">Загрузка...</div>;
+    return <div className="p-4 pt-20">Загрузка...</div>;
   }
 
   if (!place) {
-    return <div className="p-4">Место не найдено</div>;
+    return <div className="p-4 pt-20">Место не найдено</div>;
   }
 
   return (
-    <main className="min-h-screen bg-[#f0f2f8]">
+    <main className="min-h-screen bg-[#f0f2f8] pt-16">
       {/* Шапка */}
       <div className="bg-white p-4 shadow-sm">
         <div className="max-w-3xl mx-auto">
-          <Link href="/">
-            <Button variant="ghost" className="mb-4">← Назад</Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            className="mb-4" 
+            onClick={() => router.back()}
+          >
+            ← Назад
+          </Button>
           <h1 className="text-2xl font-bold">{place.title}</h1>
           <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
             <span>{place.categoryName}</span>

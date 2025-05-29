@@ -198,6 +198,8 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
 
         const clickedPlace = features[0].properties as Place;
         onPlaceSelect(clickedPlace);
+        
+        // Не перемещаем карту, просто выбираем место
       });
     });
 

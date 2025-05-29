@@ -240,7 +240,7 @@ export default function ClientActivitiesPage() {
                       {collection.activities.map((activity) => (
                         <Link key={activity.id} href={`/places/${activity.id}`}>
                           <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow">
-                            <div className="relative w-full h-40">
+                            <div className="relative w-full h-40 -m-px">
                               <Image
                                 src={activity.imageUrl}
                                 alt={activity.title}
@@ -305,7 +305,7 @@ export default function ClientActivitiesPage() {
                           alt={activity.title}
                           fill
                           sizes="(max-width: 768px) 50vw, 33vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg"
                         />
                         {activity.price && (
                           <div className="absolute top-2 left-2 bg-[#5783FF] text-white text-xs px-2 py-1 rounded">

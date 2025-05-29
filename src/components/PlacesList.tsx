@@ -14,7 +14,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { MapPin, Route, Filter } from "lucide-react";
+import { MapPin, Route } from "lucide-react";
 
 // Тип данных для маршрута (заглушка)
 interface UserRoute {
@@ -36,6 +36,7 @@ export default function PlacesList() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   useEffect(() => {
     fetch("/api/places")
@@ -51,11 +52,29 @@ export default function PlacesList() {
     return uniqueCategories.sort();
   }, [places]);
 
+  // Показываем только первые 6 категорий на мобильных, если не раскрыто
+  const displayedCategories = useMemo(() => {
+    if (showAllCategories) return categories;
+    return categories.slice(0, 6);
+  }, [categories, showAllCategories]);
+
   // Фильтрация мест по выбранной категории
   const filteredPlaces = useMemo(() => {
     if (!selectedCategory) return places;
     return places.filter(place => place.categoryName === selectedCategory);
   }, [places, selectedCategory]);
+
+  // Функция для скролла до отфильтрованного списка
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    // Скролл до секции с результатами
+    setTimeout(() => {
+      const element = document.getElementById('filtered-results');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
 
   // Рекомендованные места (топ по рейтингу)
   const featuredPlaces = useMemo(() => {
@@ -121,10 +140,9 @@ export default function PlacesList() {
       <section className="w-full py-4 bg-white shadow-sm pt-20">
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
             <span className="text-sm font-medium text-gray-700 mr-2">Категория:</span>
             <button
-              onClick={() => setSelectedCategory("")}
+              onClick={() => handleCategorySelect("")}
               className={`px-3 py-1 rounded-full text-sm transition-colors ${
                 !selectedCategory 
                   ? "bg-blue-500 text-white" 
@@ -133,10 +151,10 @@ export default function PlacesList() {
             >
               Все
             </button>
-            {categories.map(category => (
+            {displayedCategories.map(category => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => handleCategorySelect(category)}
                 className={`px-3 py-1 rounded-full text-sm transition-colors ${
                   selectedCategory === category 
                     ? "bg-blue-500 text-white" 
@@ -146,6 +164,14 @@ export default function PlacesList() {
                 {category}
               </button>
             ))}
+            {categories.length > 6 && (
+              <button
+                onClick={() => setShowAllCategories(!showAllCategories)}
+                className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors md:hidden"
+              >
+                {showAllCategories ? "Скрыть" : "Показать все"}
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -215,14 +241,14 @@ export default function PlacesList() {
                         <div className="flex w-max space-x-4 p-1">
                            {collection.places.map((place) => (
                                <Link key={place.id} href={`/places/${place.id}`}>
-                                  <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                                     <div className="relative w-full h-40">
+                                  <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
+                                     <div className="relative w-full h-40 -m-px">
                                         <Image
                                            src={place.imageUrl || '/placeholder-image.jpg'}
                                            alt={place.title}
                                            fill
                                            sizes="(max-width: 768px) 50vw, 20vw"
-                                           className="object-cover"
+                                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
                                      </div>
                                      <CardContent className="p-3">
@@ -296,7 +322,7 @@ export default function PlacesList() {
       </section>
 
       {/* Общий список всех мест */}
-      <section className="w-full py-8 bg-[#f0f2f8]">
+      <section id="filtered-results" className="w-full py-8 bg-[#f0f2f8]">
          <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">
               {selectedCategory ? `${selectedCategory} (${filteredPlaces.length})` : `Все места для посещения (${places.length})`}
@@ -310,14 +336,14 @@ export default function PlacesList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                    {filteredPlaces.map((place) => (
                       <Link key={place.id} href={`/places/${place.id}`}>
-                         <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow duration-200">
+                         <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow duration-200 group">
                             <div className="relative w-full h-48">
                                <Image
                                   src={place.imageUrl || '/placeholder-image.jpg'}
                                   alt={place.title}
                                   fill
                                   sizes="(max-width: 768px) 50vw, 33vw"
-                                  className="object-cover"
+                                  className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg"
                                />
                                {place.totalScore && (
                                  <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
