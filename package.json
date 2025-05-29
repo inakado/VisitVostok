@@ -12,6 +12,7 @@
     "import-places": "tsx scripts/import-places.js",
     "check-duplicates": "tsx scripts/check-duplicates.js",
     "clean-duplicates": "tsx scripts/clean-duplicates.js",
+    "check-db-stats": "tsx scripts/check-db-stats.js",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",

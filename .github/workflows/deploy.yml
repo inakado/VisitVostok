@@ -77,27 +77,40 @@ jobs:
           npx prisma migrate deploy
           
           # Проверить нужен ли импорт данных (проверяем уникальные места)
-          UNIQUE_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(DISTINCT CONCAT(lat::text, ',', lng::text)) as unique_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
-          TOTAL_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as total_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+          echo "📊 Проверяю статистику базы данных..."
+          DB_STATS=$(npm run check-db-stats --silent)
+          echo "$DB_STATS"
+          
+          # Парсим результаты из скрипта
+          eval "$DB_STATS"
           
           echo "📊 Всего мест в базе: $TOTAL_PLACES"
           echo "📊 Уникальных мест в базе: $UNIQUE_PLACES"
+          echo "📊 Дубликаты обнаружены: $HAS_DUPLICATES"
           
           # Если база пустая или мало мест - импортируем
           if [ "$UNIQUE_PLACES" -eq "0" ] || [ "$UNIQUE_PLACES" -lt "350" ]; then
             echo "📥 Importing places data..."
             npm run import-places || echo "Import failed, continuing..."
             
-            # Обновляем счетчики после импорта
-            TOTAL_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(*) as total_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
-            UNIQUE_PLACES=$(npx prisma db execute --stdin <<< "SELECT COUNT(DISTINCT CONCAT(lat::text, ',', lng::text)) as unique_count FROM \"Place\";" 2>/dev/null | grep -o '[0-9]\+' | head -1 || echo "0")
+            # Обновляем статистику после импорта
+            echo "📊 Обновляю статистику после импорта..."
+            DB_STATS=$(npm run check-db-stats --silent)
+            eval "$DB_STATS"
+            echo "📊 После импорта: $TOTAL_PLACES записей, $UNIQUE_PLACES уникальных"
           fi
           
           # Проверяем на дубликаты и очищаем если нужно
           echo "🧹 Checking for duplicates..."
-          if [ "$TOTAL_PLACES" -gt "$UNIQUE_PLACES" ] && [ "$UNIQUE_PLACES" -gt "0" ]; then
+          if [ "$HAS_DUPLICATES" = "true" ]; then
             echo "🚨 Обнаружены дубликаты ($TOTAL_PLACES записей vs $UNIQUE_PLACES уникальных). Очищаю..."
             npm run clean-duplicates
+            
+            # Проверяем результат очистки
+            echo "📊 Проверяю результат очистки..."
+            DB_STATS=$(npm run check-db-stats --silent)
+            eval "$DB_STATS"
+            echo "📊 После очистки: $TOTAL_PLACES записей, $UNIQUE_PLACES уникальных"
           else
             echo "✅ Database clean ($TOTAL_PLACES records, $UNIQUE_PLACES unique places)"
           fi
