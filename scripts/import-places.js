@@ -16,12 +16,40 @@ async function importPlaces() {
     
     console.log(`📊 Найдено ${places.length} мест для импорта`);
     
-    // Импортируем места батчами по 100
+    // Проверяем, сколько уникальных мест уже есть в базе
+    const existingPlaces = await prisma.place.findMany({
+      select: {
+        lat: true,
+        lng: true,
+        title: true
+      }
+    });
+    
+    const existingCoords = new Set(
+      existingPlaces.map(p => `${p.lat},${p.lng}`)
+    );
+    
+    console.log(`📍 В базе уже есть ${existingPlaces.length} мест`);
+    
+    // Фильтруем только новые места
+    const newPlaces = places.filter(place => {
+      const coordKey = `${place.location.lat},${place.location.lng}`;
+      return !existingCoords.has(coordKey);
+    });
+    
+    console.log(`✨ К импорту ${newPlaces.length} новых мест`);
+    
+    if (newPlaces.length === 0) {
+      console.log('✅ Все места уже импортированы!');
+      return;
+    }
+    
+    // Импортируем только новые места батчами по 100
     const batchSize = 100;
     let imported = 0;
     
-    for (let i = 0; i < places.length; i += batchSize) {
-      const batch = places.slice(i, i + batchSize);
+    for (let i = 0; i < newPlaces.length; i += batchSize) {
+      const batch = newPlaces.slice(i, i + batchSize);
       
       const placesToCreate = batch.map(place => ({
         title: place.title,
@@ -42,11 +70,10 @@ async function importPlaces() {
       
       await prisma.place.createMany({
         data: placesToCreate,
-        skipDuplicates: true,
       });
       
       imported += batch.length;
-      console.log(`✅ Импортировано ${imported}/${places.length} мест`);
+      console.log(`✅ Импортировано ${imported}/${newPlaces.length} новых мест`);
     }
     
     console.log('🎉 Импорт завершён успешно!');
@@ -54,8 +81,18 @@ async function importPlaces() {
     // Показываем статистику
     const totalPlaces = await prisma.place.count();
     
+    const uniqueByCoords = await prisma.place.groupBy({
+      by: ['lat', 'lng'],
+      _count: { id: true }
+    });
+    
     console.log(`\n📈 Статистика:`);
-    console.log(`Всего мест в базе: ${totalPlaces}`);
+    console.log(`Всего записей в базе: ${totalPlaces}`);
+    console.log(`Уникальных мест: ${uniqueByCoords.length}`);
+    
+    if (totalPlaces > uniqueByCoords.length) {
+      console.log(`🚨 Обнаружены дубликаты! Рекомендуется запустить: npm run clean-duplicates`);
+    }
     
   } catch (error) {
     console.error('❌ Ошибка при импорте:', error);

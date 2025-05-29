@@ -10,6 +10,8 @@
     "lint": "next lint",
     "seed": "tsx prisma/seed.ts",
     "import-places": "tsx scripts/import-places.js",
+    "check-duplicates": "tsx scripts/check-duplicates.js",
+    "clean-duplicates": "tsx scripts/clean-duplicates.js",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
