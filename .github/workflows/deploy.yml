@@ -63,7 +63,6 @@ jobs:
           
           # Проверить изменения в package.json для условной переустановки
           PACKAGE_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "(package\.json|package-lock\.json)" || echo "")
-          API_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "src/app/api/" || echo "")
           
           if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -d "node_modules" ]; then
             echo "🔄 Package dependencies changed or node_modules missing - reinstalling..."
@@ -88,13 +87,10 @@ jobs:
             echo "✅ Database already populated ($PLACE_COUNT places)"
           fi
           
-          # Билд если изменились зависимости, API или нет готовой сборки
-          if [ ! -d ".next" ] || [ ! -z "$PACKAGE_CHANGED" ] || [ ! -z "$API_CHANGED" ]; then
-            echo "🔨 Building application..."
-            npm run build
-          else
-            echo "🏗️ Build unchanged - skipping"
-          fi
+          # Принудительная сборка при каждом деплое для надежности
+          echo "🔨 Building application (forced rebuild)..."
+          rm -rf .next
+          npm run build
           
           # Перезапуск приложения
           pm2 restart visitvostok || pm2 start npm --name "visitvostok" -- start
