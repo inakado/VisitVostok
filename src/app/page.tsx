@@ -1,49 +1,32 @@
-"use client";
+import { Metadata } from "next";
+import ClientHomePage from "./ClientHomePage";
 
-import { useState, useEffect } from "react";
-import MapLibreMap from "@/components/MapLibreMap";
-import PlacesList from "@/components/PlacesList";
-import RoleSelector from "@/components/RoleSelector";
-import { Place } from "@prisma/client";
-import BottomTabs from "@/components/BottomTabs";
-import BottomSheet from "@/components/BottomSheet";
+// Metadata для главной страницы
+export const metadata: Metadata = {
+  title: "Куда поехать? - Достопримечательности Дальнего Востока",
+  description: "Откройте для себя лучшие места Приморского края и Дальнего Востока России. Интерактивная карта с достопримечательностями, природными парками, музеями и историческими местами.",
+  keywords: [
+    "достопримечательности Приморский край",
+    "места Дальний Восток",
+    "что посмотреть Владивосток", 
+    "природные парки Приморье",
+    "туристические места ДВ",
+    "карта достопримечательностей"
+  ],
+  openGraph: {
+    title: "Куда поехать? - Достопримечательности Дальнего Востока | ВИЗИТВОСТОК",
+    description: "Откройте для себя лучшие места Приморского края. Интерактивная карта с достопримечательностями, природными парками и историческими местами.",
+    url: "https://visitvostok.ru",
+  },
+  twitter: {
+    title: "Куда поехать? - Достопримечательности Дальнего Востока",
+    description: "Интерактивная карта достопримечательностей Приморского края и Дальнего Востока России",
+  },
+  alternates: {
+    canonical: "https://visitvostok.ru",
+  },
+};
 
 export default function HomePage() {
-  const [view, setView] = useState<"map" | "list">("map");
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-
-  useEffect(() => {
-    fetch("/api/places")
-      .then(res => res.json())
-      .then(data => setPlaces(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handlePlaceSelect = (place: Place | null) => {
-    setSelectedPlace(place);
-  };
-
-  const handleCloseBottomSheet = () => {
-    setSelectedPlace(null);
-  };
-
-  return (
-    <main className="min-h-screen flex flex-col bg-[#f0f2f8]">
-      <RoleSelector />
-      <BottomTabs view={view} setView={setView} />
-      <div className="flex-1">
-        {loading ? (
-          <div className="text-center text-gray-500 mt-12">Загрузка...</div>
-        ) : view === "map" ? (
-          <MapLibreMap places={places} onPlaceSelect={handlePlaceSelect} />
-        ) : (
-          <PlacesList />
-        )}
-      </div>
-      <BottomSheet place={selectedPlace} onClose={handleCloseBottomSheet} />
-    </main>
-  );
+  return <ClientHomePage />;
 }
