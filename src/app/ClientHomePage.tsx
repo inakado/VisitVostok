@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MapLibreMap from "@/components/MapLibreMap";
 import PlacesList from "@/components/PlacesList";
 import RoleSelector from "@/components/RoleSelector";
@@ -22,13 +22,13 @@ export default function ClientHomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handlePlaceSelect = (place: Place | null) => {
+  const handlePlaceSelect = useCallback((place: Place | null) => {
     setSelectedPlace(place);
-  };
+  }, [setSelectedPlace]);
 
-  const handleCloseBottomSheet = () => {
+  const handleCloseBottomSheet = useCallback(() => {
     setSelectedPlace(null);
-  };
+  }, [setSelectedPlace]);
 
   // Структурированные данные для главной страницы
   const structuredData = {

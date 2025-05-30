@@ -16,12 +16,15 @@ export default function BottomSheet({ place, onClose }: Props) {
 
   return (
     <Sheet open={!!place} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[60vh] flex flex-col">
+      <SheetContent 
+        side="bottom" 
+        className="h-[60vh] flex flex-col rounded-tl-xl rounded-tr-xl bg-white"
+      >
         <SheetHeader>
           <SheetTitle>{place.title}</SheetTitle>
         </SheetHeader>
         
-        <div className="flex-1 overflow-y-auto pb-20">
+        <div className="flex-1 overflow-y-auto px-4 pb-20">
           {place.imageUrl && (
             <div className="mt-4 w-full max-h-[240px] overflow-hidden rounded-lg">
               <div className="relative w-full h-full">
@@ -35,7 +38,7 @@ export default function BottomSheet({ place, onClose }: Props) {
             </div>
           )}
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 py-2 space-y-2">
             <p className="text-sm text-gray-500">{place.categoryName}</p>
             <p className="text-sm">{place.city}, {place.street}</p>
             {place.totalScore && (
