@@ -239,7 +239,7 @@ export default function ClientActivitiesPage() {
                     <div className="flex w-max space-x-4 p-1">
                       {collection.activities.map((activity) => (
                         <Link key={activity.id} href={`/places/${activity.id}`}>
-                          <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow">
+                          <Card className="w-64 inline-block pt-0 overflow-hidden hover:shadow-lg transition-shadow">
                             <div className="relative w-full h-40 -m-px">
                               <Image
                                 src={activity.imageUrl}
@@ -298,14 +298,14 @@ export default function ClientActivitiesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {allActivities.map((activity) => (
                   <Link key={activity.id} href={`/places/${activity.id}`}>
-                    <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
+                    <Card className="rounded-lg overflow-hidden h-full hover:shadow-lg transition-shadow group">
                       <div className="relative w-full h-48">
                         <Image
                           src={activity.imageUrl}
                           alt={activity.title}
                           fill
                           sizes="(max-width: 768px) 50vw, 33vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
                         />
                         {activity.price && (
                           <div className="absolute top-2 left-2 bg-[#5783FF] text-white text-xs px-2 py-1 rounded">

@@ -241,7 +241,7 @@ export default function PlacesList() {
                         <div className="flex w-max space-x-4 p-1">
                            {collection.places.map((place) => (
                                <Link key={place.id} href={`/places/${place.id}`}>
-                                  <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
+                                  <Card className="w-64 inline-block pt-0 overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
                                      <div className="relative w-full h-40 -m-px">
                                         <Image
                                            src={place.imageUrl || '/placeholder-image.jpg'}
@@ -287,7 +287,7 @@ export default function PlacesList() {
                   <div className="flex w-max space-x-4 p-1">
                      {dummyUserRoutes.map((route) => (
                          <Link key={route.id} href={`/routes/${route.id}`}>
-                            <Card className="w-64 inline-block overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                            <Card className="w-64 inline-block overflow-hidden pt-0 hover:shadow-lg transition-shadow duration-200">
                                <div className="relative w-full h-40">
                                   <Image
                                      src={route.imageUrl || '/placeholder-image.jpg'}
@@ -336,7 +336,7 @@ export default function PlacesList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                    {filteredPlaces.map((place) => (
                       <Link key={place.id} href={`/places/${place.id}`}>
-                         <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow duration-200 group">
+                         <Card className="overflow-hidden h-full pt-0 hover:shadow-lg transition-shadow duration-200 group">
                             <div className="relative w-full h-48">
                                <Image
                                   src={place.imageUrl || '/placeholder-image.jpg'}

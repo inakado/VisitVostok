@@ -7,6 +7,7 @@ import { Place, Review } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Star, MapPin, Clock, Phone, Globe } from "lucide-react";
+import Image from 'next/image';
 
 interface PlaceWithDetails extends Place {
   reviews: Review[];
@@ -41,10 +42,10 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   }
 
   return (
-    <main className="min-h-screen bg-[#f0f2f8] pt-16">
+    <main className="min-h-screen bg-[#f0f2f8]">
       {/* Шапка */}
       <div className="bg-white p-4 shadow-sm">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto pt-16">
           <Button 
             variant="ghost" 
             className="mb-4" 
@@ -68,6 +69,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
       {/* Основной контент */}
       <div className="max-w-3xl mx-auto p-4 space-y-6">
+        {/* Фото места */}
+        {place.imageUrl && (
+          <div className="relative w-full h-64 rounded-lg overflow-hidden shadow-md">
+            <Image
+              src={place.imageUrl}
+              alt={`Фотография ${place.title}`}
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+        )}
+
         {/* Адрес */}
         <Card className="p-4">
           <div className="flex items-start gap-3">
