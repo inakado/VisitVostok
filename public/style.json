@@ -157,11 +157,31 @@
         "line-color": "#BC8E3F",
         "line-width": [
           "interpolate", ["linear"], ["zoom"],
-          14, 0.5,
+          14, 0.6,
           18, 2,
           20, 2
         ],
-        "line-opacity": 0.9
+        "line-opacity": 1
+      }
+    },
+    {
+      "id": "roads-sidewalk",
+      "type": "line",
+      "source": "mytiles",
+      "source-layer": "roads",
+      "filter": ["all",
+        ["==", ["get", "kind_detail"], "sidewalk"]
+      ],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#BC8E3F",
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          15, 0.5, 
+          18, 2,
+          20, 2
+        ],
+        "line-opacity": 1
       }
     },
     {
