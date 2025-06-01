@@ -7,7 +7,7 @@
       "type": "vector",
       "url": "pmtiles://https://s3.ru1.storage.beget.cloud/b8118b5036f9-vv-map/pm-tiles-area/my_area.pmtiles",
       "minzoom": 0,
-      "maxzoom": 20
+      "maxzoom": 15
     }
   },
   "layers": [

@@ -54,7 +54,7 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
       center: [135.0, 48.5],
       zoom: 4,
       minZoom: 4,
-      maxZoom: 15,
+      maxZoom: 18,
     });
     mapInstanceRef.current = map;
 
