@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://visitvostok.ru",
   },
+  verification: {
+    yandex: "zf8mlqs3c6mqaej2",
+  },
 };
 
 export default function HomePage() {
