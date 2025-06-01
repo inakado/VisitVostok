@@ -103,22 +103,62 @@
       }
     },
     {
-      "id": "roads-footway",
+      "id": "roads-path",
+      "type": "line",
+      "source": "mytiles",
+      "source-layer": "roads",
+      "filter": ["==", ["get", "kind"], "path"],         
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#BC8E3F",                        
+        "line-dasharray": ["literal", [2, 3]],  
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          14, 0.6,
+          18, 2,
+          20, 2.0
+        ],
+        "line-opacity": 0.9
+      }
+    },
+    {
+      "id": "roads-steps",
       "type": "line",
       "source": "mytiles",
       "source-layer": "roads",
       "filter": ["all",
         ["==", ["get", "kind"], "path"],
+        ["==", ["get", "kind_detail"], "steps"]
+      ],
+      "layout": { "line-cap": "round", "line-join": "round" },
+    
+      "paint": {
+        "line-color": "#9FA4AD",
+        "line-dasharray": ["literal", [2, 3]],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          14, 0.6,
+          18, 2,
+          20, 2
+        ],
+        "line-opacity": 0.9
+      }
+    },
+    {
+      "id": "roads-footway",
+      "type": "line",
+      "source": "mytiles",
+      "source-layer": "roads",
+      "filter": ["all",
         ["==", ["get", "kind_detail"], "footway"]
       ],
       "layout": { "line-cap": "round", "line-join": "round" },
       "paint": {
-        "line-color": "#B8B8B8",
-        "line-dasharray": ["literal", [1, 1]], 
+        "line-color": "#BC8E3F",
         "line-width": [
           "interpolate", ["linear"], ["zoom"],
           14, 0.5,
-          18, 1.2,
+          18, 2,
           20, 2
         ],
         "line-opacity": 0.9
@@ -184,25 +224,6 @@
           12, 0.8,
           16, 2,
           20, 4.5
-        ],
-        "line-opacity": 0.9
-      }
-    },
-    {
-      "id": "roads-path",
-      "type": "line",
-      "source": "mytiles",
-      "source-layer": "roads",
-      "filter": ["==", ["get", "kind"], "path"],         
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": {
-        "line-color": "#C2A883",                        
-        "line-dasharray": ["literal", [1.5, 1.5]],  
-        "line-width": [
-          "interpolate", ["linear"], ["zoom"],
-          14, 0.6,
-          18, 1.2,
-          20, 2.0
         ],
         "line-opacity": 0.9
       }
