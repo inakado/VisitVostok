@@ -142,6 +142,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
+      <meta name="yandex-verification" content="dce0f9d81c096939" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
