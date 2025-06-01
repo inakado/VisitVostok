@@ -142,7 +142,6 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
-      <meta name="yandex-verification" content="dce0f9d81c096939" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -158,6 +157,7 @@ export default function RootLayout({
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="ВИЗИТВОСТОК - Дальний Восток России" />
         <meta name="twitter:image" content="https://visitvostok.ru/seo_banner.webp" />
+        <meta name="yandex-verification" content="dce0f9d81c096939" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
