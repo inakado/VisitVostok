@@ -3,6 +3,9 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+// Импортируем MapLibre Inspector только для development
+import "@maplibre/maplibre-gl-inspect/dist/maplibre-gl-inspect.css";
+import MaplibreInspect from "@maplibre/maplibre-gl-inspect";
 import { Protocol, PMTiles } from "pmtiles";
 import type { FeatureCollection, Point } from "geojson";
 import { Place } from "@prisma/client";
@@ -240,6 +243,24 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
     });
 
     map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+
+    // Добавляем MapLibre Inspector только в режиме разработки
+    if (process.env.NODE_ENV === "development") {
+      map.addControl(
+        new MaplibreInspect({
+          popup: new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false
+          }),
+          showInspectButton: true,
+          showInspectMap: false,
+          showMapPopup: true,
+          showMapPopupOnHover: true,
+          showInspectMapPopupOnHover: true
+        }),
+        "top-right"
+      );
+    }
 
     return () => {
       if (mapInstanceRef.current) {

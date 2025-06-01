@@ -87,31 +87,33 @@
       }
     },
     {
-      "id": "roads_base",
+      "id": "roads-base",
       "type": "line",
       "source": "mytiles",
       "source-layer": "roads",
-      "layout": {
-        "line-join": "round",
-        "line-cap": "round"
-      },
+      "layout": { "line-join": "round", "line-cap": "round" },
       "paint": {
-        "line-color": [
-          "match",
-          ["get", "kind"],
-          ["motorway", "trunk", "primary", "secondary"], "#FFD700",
-          "#ffffff"
-        ],
+        "line-color": "#ffffff",
         "line-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          8, 0.5,
-          12, 1.5,
-          16, 4,
-          20, 8
+          "interpolate", ["linear"], ["zoom"],
+          8, 0.5, 12, 1.5, 16, 4, 20, 8
         ],
         "line-opacity": 0.9
+      }
+    },
+    {
+      "id": "roads-major",
+      "type": "line",
+      "source": "mytiles",
+      "source-layer": "roads",
+      "filter": ["==", ["get", "kind"], "major_road"],
+      "layout": { "line-join": "round", "line-cap": "round" },
+      "paint": {
+        "line-color": "#FFD700",
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          8, 0.8, 12, 2, 16, 6, 20, 12
+        ]
       }
     },
     {

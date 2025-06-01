@@ -23,6 +23,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
+    "@maplibre/maplibre-gl-inspect": "^1.7.1",
     "@prisma/client": "^6.8.2",
     "@prisma/extension-accelerate": "^2.0.1",
     "@radix-ui/react-dialog": "^1.1.14",
