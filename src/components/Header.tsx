@@ -4,11 +4,11 @@ import Link from "next/link";
 import { SparklesIcon, Bars3Icon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { Menu, Transition } from "@headlessui/react";
 import Image from "next/image";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/lib/hooks";
 import { Fragment } from 'react';
 
 export default function Header() {
-  const user = useUser();
+  const { user } = useUser();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -58,6 +58,7 @@ export default function Header() {
               {/* Правая группа: поиск и профиль/вход */}
               <div className="flex items-center gap-2">
                 {/* Кнопка профиля / входа */}
+                {/*
                 {user ? (
                   <Link
                     href="/profile"
@@ -73,6 +74,8 @@ export default function Header() {
                     ПРОФИЛЬ
                   </Link>
                 ) : (
+                */}
+                {!user && (
                   <Link
                     href="/auth"
                     className="h-[44px] text-m text-[#2C3347] bg-white hover:text-white hover:bg-[#2C3347] rounded-full px-4 py-2 transition duration-200 font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl"

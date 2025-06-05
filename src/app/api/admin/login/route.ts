@@ -1,30 +1,45 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
-    const envPassword = process.env.ADMIN_PASSWORD || "admin123";
-    
-    if (password === envPassword) {
-      const cookieJar = await cookies();
-      cookieJar.set("admin-auth", password, {
+    const { username, password } = await request.json();
+
+    // Простая проверка авторизации
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (username === "admin" && password === adminPassword) {
+      const response = NextResponse.json({ success: true });
+      
+      // Устанавливаем cookie для авторизации
+      response.cookies.set("admin-auth", password, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: false, // Для HTTP
         sameSite: "lax",
         maxAge: 60 * 60 * 24, // 24 часа
+        path: "/"
       });
-      
-      return NextResponse.json({ success: true });
+
+      // Дублируем установку cookie через cookies API
+      const cookieStore = await cookies();
+      cookieStore.set("admin-auth", password, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24,
+        path: "/"
+      });
+
+      return response;
     } else {
       return NextResponse.json(
-        { error: "Invalid password" },
+        { success: false, error: "Неверные учетные данные" },
         { status: 401 }
       );
     }
   } catch {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Ошибка сервера" },
       { status: 500 }
     );
   }

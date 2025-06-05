@@ -5,6 +5,7 @@
 
 # Testing
 /coverage
+/POI_JSON
 
 # Next.js
 /.next/

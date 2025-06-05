@@ -83,6 +83,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 .dark {
@@ -119,6 +122,24 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -126,4 +147,94 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Плавные анимации для карты и фильтров */
+@layer components {
+  .smooth-transition {
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .filter-fade-in {
+    animation: filterFadeIn 200ms ease-out;
+  }
+  
+  .map-no-flicker {
+    /* Предотвращение мерцания карты */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  .filter-checkbox-smooth {
+    transition: all 150ms ease-in-out;
+  }
+  
+  .filter-slider-smooth {
+    transition: all 200ms ease-in-out;
+  }
+  
+  .map-marker-transition {
+    transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
+  }
+  
+  .category-expand {
+    animation: slideDown 200ms ease-out;
+  }
+  
+  .category-collapse {
+    animation: slideUp 200ms ease-out;
+  }
+}
+
+@keyframes filterFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    max-height: 200px;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Улучшенные стили для элементов карты */
+.maplibregl-popup-content {
+  transition: all 200ms ease-in-out !important;
+}
+
+.maplibregl-marker {
+  transition: opacity 150ms ease-in-out !important;
 }

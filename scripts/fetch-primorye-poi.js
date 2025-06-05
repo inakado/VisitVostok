@@ -231,7 +231,7 @@ async function main() {
     
     // Категории POI для поиска:
     const kinds = [
-      'cultural'
+      'campsites'
       /*'natural', 
       '*/
     ].join(',');

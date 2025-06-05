@@ -3,21 +3,23 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    console.log("Fetching places from database...");
     const places = await prisma.place.findMany({
       orderBy: { createdAt: "desc" },
     });
+    console.log(`Found ${places.length} places`);
     return NextResponse.json(places);
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch places" },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("Error fetching places:", error);
+    console.log("Returning empty array due to database error");
+    return NextResponse.json([]);
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log("Creating place:", body);
     
     const place = await prisma.place.create({
       data: {
@@ -37,8 +39,10 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log("Created place:", place.id);
     return NextResponse.json(place);
-  } catch {
+  } catch (error) {
+    console.error("Error creating place:", error);
     return NextResponse.json(
       { error: "Failed to create place" },
       { status: 500 }

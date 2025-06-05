@@ -34,6 +34,7 @@ model Place {
   reviewsCount      Int?
   imageUrl          String?
   price             String?
+  description       String?
   address           String
   categories        String[]
   temporarilyClosed Boolean
@@ -51,6 +52,30 @@ model Review {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
   createdAt DateTime @default(now())
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  duration    Int      // продолжительность в минутах
+  difficulty  String   // easy, medium, hard
+  tags        String[]
+  city        String
+  state       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id            String   @id @default(cuid())
+  name          String   @unique // Основная категория (categoryName)
+  subcategories String[] // Подкатегории
+  description   String?  // Описание категории
+  icon          String?  // Иконка для UI
+  order         Int      @default(0) // Порядок отображения
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum Role {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,103 +12,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-
-interface Activity {
-  id: string;
-  title: string;
-  imageUrl: string;
-  excerpt: string;
-  category: string;
-  location: string;
-  rating?: number;
-  reviewsCount: number;
-  coordinates: { lat: number; lng: number };
-  price?: string;
-}
-
-interface ThematicCollection {
-  title: string;
-  activities: Activity[];
-}
+import { useActivitiesPageData } from "@/lib/hooks";
 
 export default function ClientActivitiesPage() {
-  const [featuredActivities, setFeaturedActivities] = useState<Activity[]>([]);
-  const [allActivities, setAllActivities] = useState<Activity[]>([]);
-  const [thematicCollections, setThematicCollections] = useState<ThematicCollection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setLoading(true);
-        
-        // Загружаем featured активности
-        const featuredResponse = await fetch('/api/activities?featured=true&limit=5');
-        if (!featuredResponse.ok) throw new Error('Failed to fetch featured activities');
-        const featured = await featuredResponse.json();
-        
-        // Загружаем все активности
-        const allResponse = await fetch('/api/activities?limit=50');
-        if (!allResponse.ok) throw new Error('Failed to fetch all activities');
-        const all = await allResponse.json();
-        
-        setFeaturedActivities(featured);
-        setAllActivities(all);
-        
-        // Создаем тематические коллекции
-        const collections = createThematicCollections(all);
-        setThematicCollections(collections);
-        
-        setError(null);
-      } catch (err) {
-        console.error('Ошибка загрузки активностей:', err);
-        setError('Не удалось загрузить активности. Попробуйте позже.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchActivities();
-  }, []);
-
-  // Создаем тематические коллекции на основе категорий
-  const createThematicCollections = (activities: Activity[]): ThematicCollection[] => {
-    const categoryGroups: Record<string, Activity[]> = {};
-    
-    activities.forEach(activity => {
-      if (!categoryGroups[activity.category]) {
-        categoryGroups[activity.category] = [];
-      }
-      categoryGroups[activity.category].push(activity);
-    });
-
-    // Выбираем только категории с достаточным количеством активностей
-    const collections: ThematicCollection[] = [];
-    
-    if (categoryGroups["Парк"]?.length >= 2) {
-      collections.push({
-        title: "Природные парки и заповедники",
-        activities: categoryGroups["Парк"].concat(categoryGroups["Природный заповедник"] || []).slice(0, 6)
-      });
-    }
-    
-    if (categoryGroups["Музей"]?.length >= 2) {
-      collections.push({
-        title: "Музеи и культурные объекты",
-        activities: categoryGroups["Музей"].concat(categoryGroups["Театр"] || []).slice(0, 6)
-      });
-    }
-    
-    if (categoryGroups["Пляж"]?.length >= 2) {
-      collections.push({
-        title: "Морские развлечения",
-        activities: categoryGroups["Пляж"].concat(categoryGroups["Водопад"] || []).slice(0, 6)
-      });
-    }
-
-    return collections;
-  };
+  // Используем составной хук вместо прямых fetch вызовов
+  const { featured, activities, collections, isLoading, error, refetch } = useActivitiesPageData();
 
   // Структурированные данные для активностей
   const structuredData = {
@@ -117,8 +24,8 @@ export default function ClientActivitiesPage() {
     "@type": "ItemList",
     name: "Активности и события на Дальнем Востоке",
     description: "Список туристических активностей в Приморском крае",
-    numberOfItems: allActivities.length,
-    itemListElement: allActivities.slice(0, 10).map((activity, index) => ({
+    numberOfItems: activities.length,
+    itemListElement: activities.slice(0, 10).map((activity, index) => ({
       "@type": "ListItem",
       position: index + 1,
       item: {
@@ -144,8 +51,8 @@ export default function ClientActivitiesPage() {
             <h2 className="text-2xl font-bold text-[#2C3347] mb-4">Что-то пошло не так</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <button 
-              onClick={() => window.location.reload()} 
-              className="bg-[#5783FF] text-white px-6 py-3 rounded-lg hover:bg-[#4a71e8]"
+              onClick={refetch}
+              className="bg-[#5783FF] text-white px-6 py-3 rounded-lg hover:bg-[#4a71e8] transition-colors"
             >
               Попробовать снова
             </button>
@@ -168,12 +75,12 @@ export default function ClientActivitiesPage() {
         <section className="w-full py-8 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">Главные события</h2>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="w-full h-[300px] rounded-lg" />
-            ) : featuredActivities.length > 0 ? (
+            ) : featured.length > 0 ? (
               <Carousel className="w-full">
                 <CarouselContent>
-                  {featuredActivities.map((activity) => (
+                  {featured.map((activity) => (
                     <CarouselItem key={activity.id}>
                       <div className="relative w-full aspect-video overflow-hidden rounded-lg group">
                         <Image
@@ -218,7 +125,7 @@ export default function ClientActivitiesPage() {
         <section className="w-full py-8 bg-[#f0f2f8]">
           <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">Популярные подборки</h2>
-            {loading ? (
+            {isLoading ? (
               <div className="space-y-8">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="space-y-4">
@@ -231,8 +138,8 @@ export default function ClientActivitiesPage() {
                   </div>
                 ))}
               </div>
-            ) : thematicCollections.length > 0 ? (
-              thematicCollections.map((collection, index) => (
+            ) : collections.length > 0 ? (
+              collections.map((collection, index) => (
                 <div key={index} className="mb-8 last:mb-0">
                   <h3 className="text-xl font-semibold mb-4 text-[#2C3347]">{collection.title}</h3>
                   <ScrollArea className="w-full whitespace-nowrap pb-4">
@@ -284,7 +191,7 @@ export default function ClientActivitiesPage() {
         <section className="w-full py-8 bg-white">
           <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">Все активности</h2>
-            {loading ? (
+            {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(9)].map((_, i) => (
                   <div key={i} className="space-y-4">
@@ -294,9 +201,9 @@ export default function ClientActivitiesPage() {
                   </div>
                 ))}
               </div>
-            ) : allActivities.length > 0 ? (
+            ) : activities.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {allActivities.map((activity) => (
+                {activities.map((activity) => (
                   <Link key={activity.id} href={`/places/${activity.id}`}>
                     <Card className="rounded-lg overflow-hidden h-full hover:shadow-lg transition-shadow group">
                       <div className="relative w-full h-48">

@@ -13,6 +13,12 @@ interface Props {
 
 export default function BottomSheet({ place, onClose }: Props) {
   if (!place) return null;
+  
+  // Валидируем данные места
+  if (!place.id || !place.title) {
+    console.error('❌ Некорректные данные места в BottomSheet:', place);
+    return null;
+  }
 
   return (
     <Sheet open={!!place} onOpenChange={onClose}>
@@ -33,6 +39,11 @@ export default function BottomSheet({ place, onClose }: Props) {
                   alt={place.title}
                   fill
                   className="object-cover"
+                  onError={(e) => {
+                    console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  unoptimized={true}
                 />
               </div>
             </div>

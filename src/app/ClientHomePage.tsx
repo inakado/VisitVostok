@@ -1,34 +1,58 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { Place } from '@/types';
 import MapLibreMap from "@/components/MapLibreMap";
+import MapFilter from "@/components/MapFilter";
 import PlacesList from "@/components/PlacesList";
-import RoleSelector from "@/components/RoleSelector";
-import { Place } from "@prisma/client";
 import BottomTabs from "@/components/BottomTabs";
 import BottomSheet from "@/components/BottomSheet";
+import { useHomePageData } from "@/lib/hooks";
+import { useMapFilters } from "@/lib/hooks/useMapFilters";
 
 export default function ClientHomePage() {
   const [view, setView] = useState<"map" | "list">("map");
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
 
+  // Используем составной хук вместо прямого fetch
+  const { places, isLoading, error, refetch } = useHomePageData();
+
+  // Хук для фильтрации
+  const {
+    filters,
+    setFilters,
+    categories,
+    filteredPlaces,
+    totalFilteredPlaces,
+    toggleCategoryExpansion,
+  } = useMapFilters(places);
+
+  // Мемоизируем filteredPlaces для стабилизации и предотвращения мерцания
+  const stablePlaces = useMemo(() => {
+    // Просто возвращаем filteredPlaces для стабилизации ссылки
+    return filteredPlaces;
+  }, [filteredPlaces]);
+
+  // Логгируем изменения фильтрации
   useEffect(() => {
-    fetch("/api/places")
-      .then(res => res.json())
-      .then(data => setPlaces(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    console.log('🏠 ClientHomePage - изменились фильтрованные места:', {
+      всего: places.length,
+      отфильтровано: stablePlaces.length,
+      фильтры: {
+        поиск: filters.searchQuery,
+        категории: filters.selectedCategories.length,
+        подкатегории: filters.selectedSubcategories.length
+      }
+    });
+  }, [stablePlaces.length, places.length, filters]);
 
   const handlePlaceSelect = useCallback((place: Place | null) => {
     setSelectedPlace(place);
-  }, [setSelectedPlace]);
+  }, []);
 
   const handleCloseBottomSheet = useCallback(() => {
     setSelectedPlace(null);
-  }, [setSelectedPlace]);
+  }, []);
 
   // Структурированные данные для главной страницы
   const structuredData = {
@@ -53,6 +77,26 @@ export default function ClientHomePage() {
     }))
   };
 
+  // Показываем ошибку с кнопкой повтора
+  if (error) {
+    return (
+      <main className="min-h-screen flex flex-col bg-[#f0f2f8]">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8">
+            <h2 className="text-2xl font-bold text-[#2C3347] mb-4">Что-то пошло не так</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button 
+              onClick={refetch}
+              className="bg-[#5783FF] text-white px-6 py-3 rounded-lg hover:bg-[#4a71e8] transition-colors"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       <script
@@ -61,13 +105,37 @@ export default function ClientHomePage() {
       />
       <main className="min-h-screen flex flex-col bg-[#f0f2f8]">
         <h1 className="sr-only">Куда поехать? Достопримечательности и места Дальнего Востока России</h1>
-        <RoleSelector />
         <BottomTabs view={view} setView={setView} />
-        <div className="flex-1">
-          {loading ? (
+        <div className="flex-1 relative">
+          {isLoading ? (
             <div className="text-center text-gray-500 mt-12">Загрузка...</div>
           ) : view === "map" ? (
-            <MapLibreMap places={places} onPlaceSelect={handlePlaceSelect} />
+            <>
+              {/* Карта */}
+              <MapLibreMap places={stablePlaces} onPlaceSelect={handlePlaceSelect} />
+              
+              {/* Фильтр */}
+              <div className="absolute top-20 left-4 z-10 hidden lg:block">
+                <MapFilter
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  categories={categories}
+                  totalPlaces={totalFilteredPlaces}
+                  onToggleCategoryExpansion={toggleCategoryExpansion}
+                />
+              </div>
+              
+              {/* Мобильный фильтр */}
+              <div className="absolute top-20 left-4 z-10 lg:hidden">
+                <MapFilter
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  categories={categories}
+                  totalPlaces={totalFilteredPlaces}
+                  onToggleCategoryExpansion={toggleCategoryExpansion}
+                />
+              </div>
+            </>
           ) : (
             <PlacesList />
           )}

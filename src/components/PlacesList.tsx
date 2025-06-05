@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Place } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +14,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { MapPin, Route } from "lucide-react";
+import { usePlacesListData } from "@/lib/hooks";
+import { PlaceFilters, SortUtils } from "@/lib/utils/filters";
 
 // Тип данных для маршрута (заглушка)
 interface UserRoute {
@@ -33,24 +34,11 @@ const dummyUserRoutes: UserRoute[] = [
 ];
 
 export default function PlacesList() {
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/places")
-      .then(res => res.json())
-      .then(data => setPlaces(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Получение уникальных категорий
-  const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(places.map(place => place.categoryName).filter(Boolean))];
-    return uniqueCategories.sort();
-  }, [places]);
+  // Используем составной хук вместо прямого fetch
+  const { places, categories, featured, topRated, isLoading, error, refetch } = usePlacesListData();
 
   // Показываем только первые 6 категорий на мобильных, если не раскрыто
   const displayedCategories = useMemo(() => {
@@ -58,10 +46,10 @@ export default function PlacesList() {
     return categories.slice(0, 6);
   }, [categories, showAllCategories]);
 
-  // Фильтрация мест по выбранной категории
+  // Фильтрация мест по выбранной категории - ИСПОЛЬЗУЕМ УТИЛИТУ
   const filteredPlaces = useMemo(() => {
     if (!selectedCategory) return places;
-    return places.filter(place => place.categoryName === selectedCategory);
+    return PlaceFilters.byCategory(places, selectedCategory);
   }, [places, selectedCategory]);
 
   // Функция для скролла до отфильтрованного списка
@@ -76,62 +64,58 @@ export default function PlacesList() {
     }, 100);
   };
 
-  // Рекомендованные места (топ по рейтингу)
-  const featuredPlaces = useMemo(() => {
-    return places
-      .filter(place => place.totalScore && place.totalScore >= 4.0)
-      .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
-      .slice(0, 6);
-  }, [places]);
-
-  // Тематические подборки на основе реальных данных
+  // Тематические подборки на основе реальных данных - ИСПОЛЬЗУЕМ УТИЛИТЫ
   const thematicCollections = useMemo(() => {
     const collections = [];
     
-    // Популярные достопримечательности
-    const landmarks = places
-      .filter(p => p.categoryName?.includes('достопримечательность') || p.categoryName?.includes('Достопримечательность'))
-      .sort((a, b) => (b.reviewsCount || 0) - (a.reviewsCount || 0))
-      .slice(0, 8);
+    // Популярные достопримечательности - ИСПОЛЬЗУЕМ УТИЛИТУ
+    const landmarks = SortUtils.byReviewsDesc(PlaceFilters.landmarks(places)).slice(0, 8);
     
     if (landmarks.length > 0) {
       collections.push({ title: "Популярные достопримечательности", places: landmarks });
     }
 
-    // Места с высоким рейтингом
-    const topRated = places
-      .filter(p => p.totalScore && p.totalScore >= 4.5)
-      .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
-      .slice(0, 8);
-    
+    // Места с высоким рейтингом (используем topRated из хука)
     if (topRated.length > 0) {
-      collections.push({ title: "Места с высоким рейтингом", places: topRated });
+      collections.push({ title: "Места с высоким рейтингом", places: topRated.slice(0, 8) });
     }
 
-    // Музеи и культурные места
-    const museums = places
-      .filter(p => p.categoryName?.toLowerCase().includes('музей') || 
-                   p.categoryName?.toLowerCase().includes('театр') ||
-                   p.categoryName?.toLowerCase().includes('культур'))
-      .slice(0, 8);
+    // Музеи и культурные места - ИСПОЛЬЗУЕМ УТИЛИТУ
+    const museums = PlaceFilters.museums(places).slice(0, 8);
     
     if (museums.length > 0) {
       collections.push({ title: "Музеи и культурные места", places: museums });
     }
 
-    // Природные места
-    const nature = places
-      .filter(p => p.categoryName?.toLowerCase().includes('парк') || 
-                   p.categoryName?.toLowerCase().includes('природ') ||
-                   p.categoryName?.toLowerCase().includes('заповедник'))
-      .slice(0, 8);
+    // Природные места - ИСПОЛЬЗУЕМ УТИЛИТУ
+    const nature = PlaceFilters.nature(places).slice(0, 8);
     
     if (nature.length > 0) {
       collections.push({ title: "Природные места", places: nature });
     }
 
     return collections;
-  }, [places]);
+  }, [places, topRated]);
+
+  // Показываем ошибку с кнопкой повтора
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#f0f2f8]">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8">
+            <h2 className="text-2xl font-bold text-[#2C3347] mb-4">Что-то пошло не так</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button 
+              onClick={refetch}
+              className="bg-[#5783FF] text-white px-6 py-3 rounded-lg hover:bg-[#4a71e8] transition-colors"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f0f2f8]">
@@ -180,12 +164,12 @@ export default function PlacesList() {
       <section className="w-full py-8 bg-white shadow-sm">
          <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">Рекомендованные места</h2>
-             {loading ? (
+             {isLoading ? (
                 <Skeleton className="w-full h-[300px]" />
-             ) : featuredPlaces.length > 0 ? (
+             ) : featured.length > 0 ? (
                 <Carousel className="w-full" opts={{ align: "start", loop: true }}>
                    <CarouselContent className="-ml-2 md:-ml-4">
-                      {featuredPlaces.map((place) => (
+                      {featured.map((place) => (
                          <CarouselItem key={place.id} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                             <Link href={`/places/${place.id}`}>
                                <div className="relative w-full aspect-[4/3] overflow-hidden rounded-lg group">
@@ -195,6 +179,11 @@ export default function PlacesList() {
                                      fill
                                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                     onError={(e) => {
+                                       console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                                       e.currentTarget.src = '/placeholder-image.jpg';
+                                     }}
+                                     unoptimized={true}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-4">
                                      <h3 className="text-lg font-semibold text-white mb-1 drop-shadow line-clamp-2">{place.title}</h3>
@@ -228,7 +217,7 @@ export default function PlacesList() {
       {/* Тематические подборки мест */}
       <section className="w-full py-8 bg-[#f0f2f8]">
          <div className="max-w-5xl mx-auto px-4">
-            {loading ? (
+            {isLoading ? (
                  <div className="flex space-x-4 overflow-hidden">
                    <Skeleton className="w-64 h-40" />
                    <Skeleton className="w-64 h-40" />
@@ -277,7 +266,7 @@ export default function PlacesList() {
       <section className="w-full py-8 bg-white">
          <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">Популярные маршруты</h2>
-            {loading ? (
+            {isLoading ? (
                  <div className="flex space-x-4 overflow-hidden">
                    <Skeleton className="w-64 h-40" />
                    <Skeleton className="w-64 h-40" />
@@ -327,7 +316,7 @@ export default function PlacesList() {
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">
               {selectedCategory ? `${selectedCategory} (${filteredPlaces.length})` : `Все места для посещения (${places.length})`}
             </h2>
-             {loading ? (
+             {isLoading ? (
                 <div className="space-y-4">
                   <Skeleton className="w-full h-[100px]" />
                   <Skeleton className="w-full h-[100px]" />
@@ -344,6 +333,11 @@ export default function PlacesList() {
                                   fill
                                   sizes="(max-width: 768px) 50vw, 33vw"
                                   className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg"
+                                  onError={(e) => {
+                                    console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                                    e.currentTarget.src = '/placeholder-image.jpg';
+                                  }}
+                                  unoptimized={true}
                                />
                                {place.totalScore && (
                                  <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
@@ -367,7 +361,7 @@ export default function PlacesList() {
                 </div>
              )}
              
-             {!loading && filteredPlaces.length === 0 && (
+             {!isLoading && filteredPlaces.length === 0 && (
                <div className="text-center py-12">
                  <p className="text-gray-500">
                    {selectedCategory 
