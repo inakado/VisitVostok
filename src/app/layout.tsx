@@ -143,7 +143,6 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
-      <meta name="yandex-verification" content="dce0f9d81c096939" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -159,8 +158,39 @@ export default function RootLayout({
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="ВИЗИТВОСТОК - Дальний Восток России" />
         <meta name="twitter:image" content="https://visitvostok.ru/seo_banner.webp" />
+        <meta name="yandex-verification" content="dce0f9d81c096939" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* Yandex.Metrika counter - Main script */}
+        <Script
+          id="yandex-metrika-script"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+              m[i].l=1*new Date();
+              for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+              k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+              (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+              ym(102318371, "init", {
+                   clickmap:true,
+                   trackLinks:true,
+                   accurateTrackBounce:true,
+                   webvisor:true
+              });
+            `,
+          }}
+        />
+        {/* Yandex.Metrika counter - noscript tag */}
+        <noscript>
+          <div>
+            <img src="https://mc.yandex.ru/watch/102318371" alt="" />
+          </div>
+        </noscript>
+        {/* /Yandex.Metrika counter */}
+
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}

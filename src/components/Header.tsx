@@ -144,6 +144,16 @@ export default function Header() {
                   <Menu.Item>
                     {({ active }) => (
                       <Link
+                        href="/accommodation"
+                        className={`block max-w-fit px-4 py-2 mb-4 text-m text-left bg-white rounded-full shadow-md hover:shadow-lg transition-shadow ${ active ? "bg-gray-700 text-[#5783FF]" : "text-[#2C3347]" }`}
+                      >
+                        ЖИЛЬЕ
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link
                         href="/about"
                         className={`block max-w-fit px-4 py-2 text-m text-left bg-white rounded-full shadow-md hover:shadow-lg transition-shadow ${ active ? "bg-gray-700 text-[#5783FF]" : "text-[#2C3347]" }`}
                       >
