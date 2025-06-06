@@ -61,6 +61,10 @@ jobs:
         script: |
           cd /var/www/visitvostok
           
+          # Проверяем версию Node.js
+          echo "🔍 Node.js version: $(node --version)"
+          echo "🔍 npm version: $(npm --version)"
+          
           # Принудительно сбросить локальные изменения и обновить код
           git fetch origin main
           git reset --hard origin/main
@@ -69,12 +73,21 @@ jobs:
           # Проверить изменения в package.json для условной переустановки
           PACKAGE_CHANGED=$(git diff HEAD~1 HEAD --name-only | grep -E "(package\.json|package-lock\.json)" || echo "")
           
-          if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -d "node_modules" ]; then
-            echo "🔄 Package dependencies changed or node_modules missing - reinstalling..."
+          # Проверяем целостность критических зависимостей
+          CRITICAL_DEPS_MISSING=false
+          if [ ! -f "node_modules/@radix-ui/react-checkbox/package.json" ] || \
+             [ ! -f "node_modules/@radix-ui/react-select/package.json" ] || \
+             [ ! -f "node_modules/@radix-ui/react-tabs/package.json" ] || \
+             [ ! -f "node_modules/@radix-ui/react-collapsible/package.json" ]; then
+            CRITICAL_DEPS_MISSING=true
+          fi
+          
+          if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -d "node_modules" ] || [ "$CRITICAL_DEPS_MISSING" = "true" ]; then
+            echo "🔄 Package dependencies changed, missing, or corrupted - reinstalling..."
             rm -rf node_modules
-            npm install
+            npm ci
           else
-            echo "📦 Dependencies unchanged - skipping reinstall"
+            echo "📦 Dependencies intact - skipping reinstall"
           fi
           
           # Prisma операции
