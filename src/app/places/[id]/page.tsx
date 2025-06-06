@@ -62,7 +62,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             <p className="text-gray-600 mb-6">Возможно, место было удалено или URL неверный</p>
             <Button 
               variant="default" 
-              className="hover:bg-gray-800 active:bg-gray-900 transition-all duration-200"
+              className="bg-gray-900 text-white hover:bg-gray-800 active:bg-gray-900 transition-all duration-200"
               onClick={() => {
                 try {
                   if (typeof window !== 'undefined' && window.history.length > 1) {
@@ -91,7 +91,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         <Button 
           variant="ghost" 
           size="sm"
-          className="hover:bg-gray-200 active:bg-gray-300 transition-all duration-200 hover:shadow-sm mt-16"
+          className="text-gray-700 hover:text-gray-900 hover:bg-gray-200 active:bg-gray-300 transition-all duration-200 hover:shadow-sm mt-16"
           onClick={() => {
             try {
               // Проверяем есть ли история для возврата
@@ -108,7 +108,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             }
           }}
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2 text-gray-700" />
           Назад
         </Button>
       </div>
@@ -118,7 +118,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Изображение с правильными пропорциями */}
           <div className="relative w-full h-48 sm:h-64 md:h-80 bg-gray-100">
-            {place.imageUrl && !imageError ? (
+            {place.imageUrl && place.imageUrl.trim() !== '' && place.imageUrl !== 'null' && !imageError ? (
               <Image
                 src={place.imageUrl}
                 alt={place.title}
@@ -126,7 +126,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                 className="object-cover"
                 priority
                 onError={() => {
-                  console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                  console.warn('⚠️ Не удалось загрузить изображение на странице места:', place.imageUrl);
                   setImageError(true);
                 }}
                 unoptimized={true}

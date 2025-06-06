@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,70 @@ const dummyUserRoutes: UserRoute[] = [
 export default function PlacesList() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showAllCategories, setShowAllCategories] = useState(false);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [visiblePlacesCount, setVisiblePlacesCount] = useState(30); // Начинаем с 30 мест
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const PLACES_INCREMENT = 30; // Подгружаем по 30 мест
+
+  // Утилита для безопасного получения URL изображения
+  const getSafeImageUrl = (imageUrl: string | null | undefined, itemId?: string): string => {
+    const PLACEHOLDER = '/placeholder-image.svg';
+    
+    // Быстрая проверка null/undefined
+    if (imageUrl === null || imageUrl === undefined) {
+      return PLACEHOLDER;
+    }
+    
+    // Проверка пустой строки или строки "null"
+    if (typeof imageUrl === 'string' && (imageUrl.trim() === '' || imageUrl === 'null')) {
+      return PLACEHOLDER;
+    }
+    
+    // Проверка типа
+    if (typeof imageUrl !== 'string') {
+      return PLACEHOLDER;
+    }
+    
+    // Если это изображение уже не загружалось - возвращаем placeholder
+    if (itemId && failedImages.has(itemId)) {
+      return PLACEHOLDER;
+    }
+    
+    // Блокируем только известные проблемные URLs:
+    // 1. Google URLs с конкретными проблемными параметрами
+    if (imageUrl.includes('googleusercontent.com') && imageUrl.includes('=w408-h306-k-no')) {
+      return PLACEHOLDER;
+    }
+    
+    // 2. Dummy/тестовые URLs которые точно не существуют
+    if (imageUrl.startsWith('/routes/dummy-') || imageUrl.includes('dummy-route')) {
+      return PLACEHOLDER;
+    }
+    
+    // 3. Явно невалидные URL форматы
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/') && !imageUrl.startsWith('./')) {
+      return PLACEHOLDER;
+    }
+    
+    // Все остальные URL пропускаем - пусть браузер попробует загрузить
+    return imageUrl;
+  };
+
+  // Обработчик ошибок загрузки изображений
+  const handleImageError = (imageUrl: string | null | undefined, itemId?: string) => {
+    // Логируем только если это не Google/dummy URL (которые мы знаем что не работают)
+    if (imageUrl && 
+        !imageUrl.includes('googleusercontent.com') && 
+        !imageUrl.includes('googleapis.com') && 
+        !imageUrl.includes('dummy') &&
+        imageUrl !== 'null' &&
+        imageUrl !== null) {
+      console.warn(`⚠️ PlacesList: Не удалось загрузить изображение для ${itemId}:`, imageUrl);
+    }
+    if (itemId) {
+      setFailedImages(prev => new Set([...prev, itemId]));
+    }
+  };
 
   // Используем составной хук вместо прямого fetch
   const { places, categories, featured, topRated, isLoading, error, refetch } = usePlacesListData();
@@ -52,9 +116,30 @@ export default function PlacesList() {
     return PlaceFilters.byCategory(places, selectedCategory);
   }, [places, selectedCategory]);
 
+  // Показываем только определенное количество мест для infinite scroll
+  const visiblePlaces = useMemo(() => {
+    return filteredPlaces.slice(0, visiblePlacesCount);
+  }, [filteredPlaces, visiblePlacesCount]);
+
+  // Есть ли еще места для загрузки
+  const hasMorePlaces = filteredPlaces.length > visiblePlacesCount;
+
+  // Функция подгрузки следующей порции мест
+  const loadMorePlaces = useCallback(() => {
+    if (isLoadingMore || !hasMorePlaces) return;
+    
+    setIsLoadingMore(true);
+    // Имитируем небольшую задержку для UX
+    setTimeout(() => {
+      setVisiblePlacesCount(prev => prev + PLACES_INCREMENT);
+      setIsLoadingMore(false);
+    }, 300);
+  }, [isLoadingMore, hasMorePlaces, PLACES_INCREMENT]);
+
   // Функция для скролла до отфильтрованного списка
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    setVisiblePlacesCount(30); // Сбрасываем на начальное количество при смене категории
     // Скролл до секции с результатами
     setTimeout(() => {
       const element = document.getElementById('filtered-results');
@@ -63,6 +148,19 @@ export default function PlacesList() {
       }
     }, 100);
   };
+
+  // Обработчик скролла для infinite scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop 
+          >= document.documentElement.offsetHeight - 1000) {
+        loadMorePlaces();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMorePlaces]);
 
   // Тематические подборки на основе реальных данных - ИСПОЛЬЗУЕМ УТИЛИТЫ
   const thematicCollections = useMemo(() => {
@@ -174,14 +272,13 @@ export default function PlacesList() {
                             <Link href={`/places/${place.id}`}>
                                <div className="relative w-full aspect-[4/3] overflow-hidden rounded-lg group">
                                   <Image
-                                     src={place.imageUrl || '/placeholder-image.jpg'}
+                                     src={getSafeImageUrl(place.imageUrl, `featured-${place.id}`)}
                                      alt={place.title}
                                      fill
                                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                     onError={(e) => {
-                                       console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
-                                       e.currentTarget.src = '/placeholder-image.jpg';
+                                     onError={() => {
+                                       handleImageError(place.imageUrl, `featured-${place.id}`);
                                      }}
                                      unoptimized={true}
                                   />
@@ -233,11 +330,15 @@ export default function PlacesList() {
                                   <Card className="w-64 inline-block pt-0 overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
                                      <div className="relative w-full h-40 -m-px">
                                         <Image
-                                           src={place.imageUrl || '/placeholder-image.jpg'}
+                                           src={getSafeImageUrl(place.imageUrl, `collection-${place.id}`)}
                                            alt={place.title}
                                            fill
                                            sizes="(max-width: 768px) 50vw, 20vw"
                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                           onError={() => {
+                                             handleImageError(place.imageUrl, `collection-${place.id}`);
+                                           }}
+                                           unoptimized={true}
                                         />
                                      </div>
                                      <CardContent className="p-3">
@@ -279,11 +380,15 @@ export default function PlacesList() {
                             <Card className="w-64 inline-block overflow-hidden pt-0 hover:shadow-lg transition-shadow duration-200">
                                <div className="relative w-full h-40">
                                   <Image
-                                     src={route.imageUrl || '/placeholder-image.jpg'}
+                                     src={getSafeImageUrl(route.imageUrl, `route-${route.id}`)}
                                      alt={route.title}
                                      fill
                                      sizes="(max-width: 768px) 50vw, 20vw"
                                      className="object-cover"
+                                     onError={() => {
+                                       handleImageError(route.imageUrl, `route-${route.id}`);
+                                     }}
+                                     unoptimized={true}
                                   />
                                </div>
                                <CardContent className="p-3">
@@ -315,6 +420,11 @@ export default function PlacesList() {
          <div className="max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 text-[#2C3347]">
               {selectedCategory ? `${selectedCategory} (${filteredPlaces.length})` : `Все места для посещения (${places.length})`}
+              {hasMorePlaces && (
+                <span className="text-base font-normal text-gray-600 ml-2">
+                  - показано {visiblePlaces.length} из {filteredPlaces.length}
+                </span>
+              )}
             </h2>
              {isLoading ? (
                 <div className="space-y-4">
@@ -323,19 +433,18 @@ export default function PlacesList() {
                 </div>
              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {filteredPlaces.map((place) => (
+                   {visiblePlaces.map((place) => (
                       <Link key={place.id} href={`/places/${place.id}`}>
                          <Card className="overflow-hidden h-full pt-0 hover:shadow-lg transition-shadow duration-200 group">
                             <div className="relative w-full h-48">
                                <Image
-                                  src={place.imageUrl || '/placeholder-image.jpg'}
+                                  src={getSafeImageUrl(place.imageUrl, `list-${place.id}`)}
                                   alt={place.title}
                                   fill
                                   sizes="(max-width: 768px) 50vw, 33vw"
                                   className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg"
-                                  onError={(e) => {
-                                    console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
-                                    e.currentTarget.src = '/placeholder-image.jpg';
+                                  onError={() => {
+                                    handleImageError(place.imageUrl, `list-${place.id}`);
                                   }}
                                   unoptimized={true}
                                />
@@ -359,6 +468,29 @@ export default function PlacesList() {
                       </Link>
                    ))}
                 </div>
+             )}
+
+             {/* Кнопка загрузки больше мест или индикатор загрузки */}
+             {!isLoading && hasMorePlaces && (
+               <div className="flex justify-center mt-8">
+                 <button
+                   onClick={loadMorePlaces}
+                   disabled={isLoadingMore}
+                   className="px-6 py-3 bg-[#5783FF] text-white rounded-lg hover:bg-[#4a71e8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                 >
+                   {isLoadingMore ? "Загружаем..." : "Загрузить еще"}
+                 </button>
+               </div>
+             )}
+             
+             {/* Индикатор загрузки для infinite scroll */}
+             {isLoadingMore && (
+               <div className="flex justify-center mt-8">
+                 <div className="flex items-center space-x-2">
+                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#5783FF]"></div>
+                   <span className="text-gray-600">Загружаем еще места...</span>
+                 </div>
+               </div>
              )}
              
              {!isLoading && filteredPlaces.length === 0 && (

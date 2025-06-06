@@ -256,7 +256,7 @@ export default function PlaceViewPage({ params }: { params: Promise<{ id: string
               </div>
             )}
 
-            {place.imageUrl && (
+            {place.imageUrl && place.imageUrl.trim() !== '' && place.imageUrl !== 'null' && (
               <div>
                 <label className="text-sm font-medium text-slate-700">Изображение</label>
                 <div className="mt-2">
@@ -267,7 +267,7 @@ export default function PlaceViewPage({ params }: { params: Promise<{ id: string
                     height={300}
                     className="max-w-sm h-auto rounded-lg border"
                     onError={(e) => {
-                      console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                      console.warn('⚠️ Не удалось загрузить изображение в админке:', place.imageUrl);
                       e.currentTarget.style.display = 'none';
                     }}
                     unoptimized={true}

@@ -121,9 +121,9 @@ export default function MapFilter({
 					variant="ghost"
 					size="sm"
 					onClick={() => setIsCollapsed(true)}
-					className="h-6 w-6 p-0 transition-colors duration-200"
+					className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-200"
 				>
-					<X className="h-4 w-4" />
+					<X className="h-4 w-4 text-gray-500" />
 				</Button>
 			</CardHeader>
 			<CardContent className="pt-0 space-y-4">
@@ -159,7 +159,7 @@ export default function MapFilter({
 										variant="ghost"
 										size="sm"
 										onClick={clearAllFilters}
-										className="text-xs h-6 px-2 transition-colors duration-200 hover:bg-gray-100"
+										className="text-xs h-6 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors duration-200"
 									>
 										Очистить
 									</Button>
@@ -201,13 +201,13 @@ export default function MapFilter({
 															<Button 
 																variant="ghost" 
 																size="sm" 
-																className="h-6 w-6 p-0 transition-all duration-200"
+																className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200"
 																onClick={() => onToggleCategoryExpansion(category.id)}
 															>
 																{category.isExpanded ? (
-																	<ChevronDown className="h-3 w-3 transition-transform duration-200" />
+																	<ChevronDown className="h-3 w-3 text-gray-500 transition-transform duration-200" />
 																) : (
-																	<ChevronRight className="h-3 w-3 transition-transform duration-200" />
+																	<ChevronRight className="h-3 w-3 text-gray-500 transition-transform duration-200" />
 																)}
 															</Button>
 														</CollapsibleTrigger>

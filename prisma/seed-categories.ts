@@ -2,9 +2,17 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const categories = [
+interface CategoryData {
+  name: string
+  icon: string
+  subcategories: string[]
+  order: number
+}
+
+const categories: CategoryData[] = [
   {
     name: 'Природа',
+    icon: 'nature.svg',
     subcategories: [
       'Водопады',
       'Пляжи', 
@@ -21,6 +29,7 @@ const categories = [
   },
   {
     name: 'История и культура',
+    icon: 'history.svg',
     subcategories: [
       'Архитектура',
       'Замки и крепости', 
@@ -36,6 +45,7 @@ const categories = [
   },
   {
     name: 'Музеи и выставки',
+    icon: 'museum.svg',
     subcategories: [
       'Исторические',
       'Военные',
@@ -51,6 +61,7 @@ const categories = [
   },
   {
     name: 'Парки и животные',
+    icon: 'parks.svg',
     subcategories: [
       'Городские парки',
       'Зоопарки и аквариумы',
@@ -62,6 +73,7 @@ const categories = [
   },
   {
     name: 'Развлечения и досуг',
+    icon: 'entertainment.svg',
     subcategories: [
       'Театры',
       'Кинотеатры',
@@ -77,6 +89,7 @@ const categories = [
   },
   {
     name: 'Спорт и активный отдых',
+    icon: 'sport.svg',
     subcategories: [
       'Горнолыжка и зимний спорт',
       'Водный спорт/дайвинг',
@@ -91,6 +104,7 @@ const categories = [
   },
   {
     name: 'Религия',
+    icon: 'religion.svg',
     subcategories: [
       'Православные храмы',
       'Соборы',
@@ -102,6 +116,7 @@ const categories = [
   },
   {
     name: 'Проживание',
+    icon: 'accommodation.svg',
     subcategories: [
       'Отели/мотели',
       'Гостевые дома',
@@ -113,6 +128,7 @@ const categories = [
   },
   {
     name: 'Транспорт и сервис',
+    icon: 'transport.svg',
     subcategories: [
       'Железнодорожный транспорт',
       'Автосервис',
@@ -127,6 +143,7 @@ const categories = [
   },
   {
     name: 'Покупки и рынки',
+    icon: 'market.svg',
     subcategories: [
       'Магазины',
       'Торговые центры',
@@ -138,6 +155,7 @@ const categories = [
   },
   {
     name: 'Прочее',
+    icon: 'other.svg',
     subcategories: [
       'Неклассифицированные'
     ],
@@ -153,15 +171,17 @@ async function seedCategories() {
       where: { name: category.name },
       update: {
         subcategories: category.subcategories,
+        icon: category.icon,
         order: category.order
       },
       create: {
         name: category.name,
         subcategories: category.subcategories,
+        icon: category.icon,
         order: category.order
       }
     })
-    console.log(`✅ Категория "${category.name}" создана/обновлена`)
+    console.log(`✅ Категория "${category.name}" создана/обновлена с иконкой ${category.icon}`)
   }
 
   console.log('🎉 Заполнение категорий завершено!')

@@ -27,7 +27,13 @@ export default function SafeImage({
   onError,
 }: SafeImageProps) {
   const [hasError, setHasError] = useState(false);
-  const [imageSrc, setImageSrc] = useState(src || fallbackSrc);
+  // Безопасная инициализация - проверяем на null/undefined/пустую строку
+  const [imageSrc, setImageSrc] = useState(() => {
+    if (!src || src.trim() === '' || src === 'null') {
+      return fallbackSrc;
+    }
+    return src;
+  });
 
   const handleError = () => {
     if (!hasError && imageSrc !== fallbackSrc) {

@@ -75,7 +75,7 @@ export default function BottomSheet({ place, onClose }: Props) {
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="h-9 w-9 p-0 shrink-0 hover:bg-gray-100 rounded-full"
+                className="h-9 w-9 p-0 shrink-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
               >
                 <X className="h-5 w-5 text-gray-500" />
               </Button>
@@ -87,14 +87,14 @@ export default function BottomSheet({ place, onClose }: Props) {
             <div className="px-6 py-6 space-y-6">
               {/* Изображение или placeholder */}
               <div className="relative w-full h-48 rounded-xl overflow-hidden bg-gray-50">
-                {place.imageUrl && !imageError ? (
+                {place.imageUrl && place.imageUrl.trim() !== '' && place.imageUrl !== 'null' && !imageError ? (
                   <Image
                     src={place.imageUrl}
                     alt={place.title}
                     fill
                     className="object-cover"
                     onError={() => {
-                      console.warn('⚠️ Не удалось загрузить изображение:', place.imageUrl);
+                      console.warn('⚠️ Не удалось загрузить изображение в BottomSheet:', place.imageUrl);
                       setImageError(true);
                     }}
                     unoptimized={true}

@@ -33,7 +33,7 @@ export default function ClientActivitiesPage() {
         name: activity.title,
         description: activity.excerpt,
         category: activity.category,
-        image: activity.imageUrl.startsWith('http') ? activity.imageUrl : `https://visitvostok.ru${activity.imageUrl}`,
+        image: activity.imageUrl && activity.imageUrl.trim() !== '' && activity.imageUrl !== 'null' && activity.imageUrl.startsWith('http') ? activity.imageUrl : `https://visitvostok.ru/placeholder-image.jpg`,
         geo: {
           "@type": "GeoCoordinates",
           latitude: activity.coordinates.lat,
@@ -84,11 +84,16 @@ export default function ClientActivitiesPage() {
                     <CarouselItem key={activity.id}>
                       <div className="relative w-full aspect-video overflow-hidden rounded-lg group">
                         <Image
-                          src={activity.imageUrl}
+                          src={activity.imageUrl && activity.imageUrl.trim() !== '' && activity.imageUrl !== 'null' ? activity.imageUrl : '/placeholder-image.jpg'}
                           alt={activity.title}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            console.warn('⚠️ Не удалось загрузить изображение активности в слайдере:', activity.imageUrl);
+                            e.currentTarget.src = '/placeholder-image.jpg';
+                          }}
+                          unoptimized={true}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
                           <div className="flex items-center gap-2 mb-2">
@@ -149,11 +154,16 @@ export default function ClientActivitiesPage() {
                           <Card className="w-64 inline-block pt-0 overflow-hidden hover:shadow-lg transition-shadow">
                             <div className="relative w-full h-40 -m-px">
                               <Image
-                                src={activity.imageUrl}
+                                src={activity.imageUrl && activity.imageUrl.trim() !== '' && activity.imageUrl !== 'null' ? activity.imageUrl : '/placeholder-image.jpg'}
                                 alt={activity.title}
                                 fill
                                 sizes="(max-width: 768px) 50vw, 20vw"
                                 className="object-cover"
+                                onError={(e) => {
+                                  console.warn('⚠️ Не удалось загрузить изображение активности в коллекции:', activity.imageUrl);
+                                  e.currentTarget.src = '/placeholder-image.jpg';
+                                }}
+                                unoptimized={true}
                               />
                               {activity.price && (
                                 <div className="absolute top-2 left-2 bg-[#5783FF] text-white text-xs px-2 py-1 rounded">
@@ -208,11 +218,16 @@ export default function ClientActivitiesPage() {
                     <Card className="rounded-lg overflow-hidden h-full hover:shadow-lg transition-shadow group">
                       <div className="relative w-full h-48">
                         <Image
-                          src={activity.imageUrl}
+                          src={activity.imageUrl && activity.imageUrl.trim() !== '' && activity.imageUrl !== 'null' ? activity.imageUrl : '/placeholder-image.jpg'}
                           alt={activity.title}
                           fill
                           sizes="(max-width: 768px) 50vw, 33vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
+                          onError={(e) => {
+                            console.warn('⚠️ Не удалось загрузить изображение активности в списке:', activity.imageUrl);
+                            e.currentTarget.src = '/placeholder-image.jpg';
+                          }}
+                          unoptimized={true}
                         />
                         {activity.price && (
                           <div className="absolute top-2 left-2 bg-[#5783FF] text-white text-xs px-2 py-1 rounded">
