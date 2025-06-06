@@ -61,14 +61,14 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-[350px]">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+      <Card className="w-full max-w-[350px]">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <Shield className="h-12 w-12 text-blue-600" />
+            <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl text-center">Админ Панель</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-xl sm:text-2xl text-center">Админ Панель</CardTitle>
+          <CardDescription className="text-center text-sm sm:text-base">
             Введите пароль для доступа к панели администратора
           </CardDescription>
         </CardHeader>

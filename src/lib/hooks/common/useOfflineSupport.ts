@@ -164,7 +164,7 @@ export function useOfflineSupport<T>(
 			console.warn('Не удалось загрузить offline данные:', error)
 			return options.fallbackData || null
 		}
-	}, [config.storageKey, config.maxAge, options.fallbackData, options.onDataStale])
+	}, [config.storageKey, config.maxAge, options])
 
 	const clearStoredData = useCallback(() => {
 		if (typeof window === 'undefined') return
@@ -271,7 +271,7 @@ export function useOfflineApiData<T>(
 		} finally {
 			setLoading(false)
 		}
-	}, [apiFunction, offline.isOffline, offline.isDataStale, offline.storeData, offline.getStoredData])
+	}, [apiFunction, offline])
 
 	// Загружаем данные при монтировании и изменении состояния сети
 	useEffect(() => {

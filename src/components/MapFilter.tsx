@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Filter, X, ChevronRight, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -30,7 +30,23 @@ export default function MapFilter({
 	className = "",
 }: MapFilterProps) {
 	const [activeTab, setActiveTab] = useState<FilterTab>("catalog")
-	const [isCollapsed, setIsCollapsed] = useState(false)
+	const [isCollapsed, setIsCollapsed] = useState(true) // По умолчанию свернут
+
+	// Определяем размер экрана при загрузке
+	useEffect(() => {
+		const checkIsMobile = () => {
+			const isMobile = window.innerWidth < 1024 // lg breakpoint
+			setIsCollapsed(isMobile)
+		}
+
+		// Проверяем при загрузке
+		checkIsMobile()
+
+		// Слушаем изменения размера экрана
+		window.addEventListener('resize', checkIsMobile)
+		
+		return () => window.removeEventListener('resize', checkIsMobile)
+	}, [])
 
 	const handleSearchChange = (value: string) => {
 		onFiltersChange({
@@ -105,7 +121,7 @@ export default function MapFilter({
 					variant="ghost"
 					size="sm"
 					onClick={() => setIsCollapsed(true)}
-					className="h-6 w-6 p-0 lg:hidden transition-colors duration-200"
+					className="h-6 w-6 p-0 transition-colors duration-200"
 				>
 					<X className="h-4 w-4" />
 				</Button>

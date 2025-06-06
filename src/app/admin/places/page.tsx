@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -63,29 +63,33 @@ export default function AdminPlacesPage() {
 
   // Бесконечная прокрутка
   useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
+    // Небольшая задержка для корректной работы после смены фильтров
+    const timer = setTimeout(() => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
 
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isLoadingMore) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage && !isLoadingMore) {
+            loadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
 
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
+      if (loadMoreRef.current) {
+        observerRef.current.observe(loadMoreRef.current);
+      }
+    }, 100);
 
     return () => {
+      clearTimeout(timer);
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
-  }, [hasNextPage, isLoadingMore, loadMore]);
+  }, [hasNextPage, isLoadingMore, loadMore, search, category, subcategory, sortBy, sortOrder]);
 
   // Проверка авторизации
   if (authLoading) {
@@ -127,28 +131,32 @@ export default function AdminPlacesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 pt-24">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-3 sm:p-6 pt-16 sm:pt-24">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Шапка */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => router.push("/admin")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="outline" onClick={() => router.push("/admin")} size="sm">
+              <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Назад</span>
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <MapPin className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg">
+                <MapPin className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Управление местами</h1>
-                <p className="text-slate-600">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">Управление местами</h1>
+                <p className="text-xs sm:text-sm text-slate-600">
                   {pagination && `${pagination.total} мест в базе данных`}
                 </p>
               </div>
             </div>
           </div>
-          <Button onClick={() => router.push("/admin/places/new")} className="bg-green-600 hover:bg-green-700">
+          <Button 
+            onClick={() => router.push("/admin/places/new")} 
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+            size="sm"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Добавить место
           </Button>
@@ -157,26 +165,32 @@ export default function AdminPlacesPage() {
         {/* Фильтры и сортировка */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Filter className="w-5 h-5" />
-              Поиск, фильтры и сортировка
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+              Поиск и фильтры
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               {/* Поиск */}
-              <div className="relative lg:col-span-2">
+              <div className="relative sm:col-span-2 lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Поиск по названию, городу, адресу..."
+                  placeholder="Поиск..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
               </div>
 
               {/* Фильтр по категории */}
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category} onValueChange={(value) => {
+                setCategory(value);
+                // Сбрасываем подкатегорию при смене категории
+                if (value !== category) {
+                  setSubcategory('all');
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Все категории" />
                 </SelectTrigger>
@@ -267,10 +281,10 @@ export default function AdminPlacesPage() {
         {/* Таблица мест */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Список мест</span>
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-base sm:text-lg">Список мест</span>
               {pagination && (
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-xs">
                   Показано {places.length} из {pagination.total}
                 </Badge>
               )}
@@ -298,8 +312,8 @@ export default function AdminPlacesPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Заголовки с сортировкой */}
-                <div className="grid grid-cols-12 gap-4 p-4 bg-slate-50 rounded-lg font-medium text-sm border">
+                {/* Заголовки с сортировкой - скрыты на мобильных */}
+                <div className="hidden lg:grid grid-cols-12 gap-4 p-4 bg-slate-50 rounded-lg font-medium text-sm border">
                   <button 
                     onClick={() => toggleSort('title')}
                     className="col-span-4 text-left text-slate-700 hover:text-blue-600 flex items-center gap-1"
@@ -331,64 +345,122 @@ export default function AdminPlacesPage() {
                   }
                   
                   return (
-                    <div key={place.id} className="grid grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-slate-50 transition-colors bg-white">
-                      <div className="col-span-4">
-                        <div className="font-medium text-slate-900">{place.title}</div>
-                        {place.address && (
-                          <div className="text-sm text-slate-500 mt-1">{place.address}</div>
-                        )}
+                    <React.Fragment key={place.id}>
+                      {/* Мобильная версия карточки */}
+                      <div className="lg:hidden border rounded-lg p-4 bg-white space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-900 text-sm">{place.title}</div>
+                            <div className="text-xs text-slate-500 mt-1">{place.city}</div>
+                            {place.address && (
+                              <div className="text-xs text-slate-500">{place.address}</div>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="text-xs text-blue-700 border-blue-200 bg-blue-50 ml-2">
+                            {place.categoryName}
+                          </Badge>
+                        </div>
+                        
                         {place.totalScore && (
-                          <div className="text-xs text-green-600 mt-1">
+                          <div className="text-xs text-green-600">
                             ⭐ {place.totalScore.toFixed(1)} ({place.reviewsCount || 0} отзывов)
                           </div>
                         )}
+                        
+                        <div className="text-xs font-mono text-slate-600">
+                          {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs h-8"
+                            onClick={() => router.push(`/admin/places/${place.id}`)}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Просмотр
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs h-8"
+                            onClick={() => router.push(`/admin/places/${place.id}/edit`)}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Изменить
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
+                            onClick={() => handleDelete(place.id, place.title)}
+                          >
+                            <Trash2 className="w-3 h-3 text-red-600" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="col-span-2">
-                        <span className="text-slate-700">{place.city}</span>
+
+                      {/* Десктопная версия таблицы */}
+                      <div className="hidden lg:grid grid-cols-12 gap-4 p-4 border rounded-lg hover:bg-slate-50 transition-colors bg-white">
+                        <div className="col-span-4">
+                          <div className="font-medium text-slate-900">{place.title}</div>
+                          {place.address && (
+                            <div className="text-sm text-slate-500 mt-1">{place.address}</div>
+                          )}
+                          {place.totalScore && (
+                            <div className="text-xs text-green-600 mt-1">
+                              ⭐ {place.totalScore.toFixed(1)} ({place.reviewsCount || 0} отзывов)
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-slate-700">{place.city}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
+                            {place.categoryName}
+                          </Badge>
+                          {place.categories && place.categories.length > 0 && (
+                            <div className="text-xs text-slate-500 mt-1">
+                              +{place.categories.length} подкат.
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-span-2 text-sm font-mono text-slate-600">
+                          {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
+                        </div>
+                        <div className="col-span-2 flex justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200"
+                            onClick={() => router.push(`/admin/places/${place.id}`)}
+                            title="Просмотр"
+                          >
+                            <Eye className="w-4 h-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 hover:bg-amber-50 hover:border-amber-200"
+                            onClick={() => router.push(`/admin/places/${place.id}/edit`)}
+                            title="Редактировать"
+                          >
+                            <Pencil className="w-4 h-4 text-amber-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
+                            onClick={() => handleDelete(place.id, place.title)}
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="col-span-2">
-                        <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50">
-                          {place.categoryName}
-                        </Badge>
-                        {place.categories && place.categories.length > 0 && (
-                          <div className="text-xs text-slate-500 mt-1">
-                            +{place.categories.length} подкат.
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-span-2 text-sm font-mono text-slate-600">
-                        {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
-                      </div>
-                      <div className="col-span-2 flex justify-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-200"
-                          onClick={() => router.push(`/admin/places/${place.id}`)}
-                          title="Просмотр"
-                        >
-                          <Eye className="w-4 h-4 text-blue-600" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 hover:bg-amber-50 hover:border-amber-200"
-                          onClick={() => router.push(`/admin/places/${place.id}/edit`)}
-                          title="Редактировать"
-                        >
-                          <Pencil className="w-4 h-4 text-amber-600" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 hover:bg-red-50 hover:border-red-200"
-                          onClick={() => handleDelete(place.id, place.title)}
-                          title="Удалить"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
+                    </React.Fragment>
                   );
                 })}
 

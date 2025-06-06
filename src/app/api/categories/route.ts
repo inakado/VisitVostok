@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { CategoryService } from '@/services/category.service'
 
 export async function GET() {
 	try {
-		const categories = await prisma.category.findMany({
-			orderBy: {
-				order: 'asc'
-			}
-		})
-
-		return NextResponse.json(categories)
+		const categories = await CategoryService.getAllWithIcons()
+		
+		// Добавляем полные пути к иконкам
+		const categoriesWithPaths = categories.map(category => ({
+			...category,
+			iconPath: CategoryService.getIconPath(category.icon)
+		}))
+		
+		return NextResponse.json(categoriesWithPaths)
 	} catch (error) {
-		console.error('Ошибка при получении категорий:', error)
+		console.error('Ошибка получения категорий:', error)
 		return NextResponse.json(
-			{ error: 'Ошибка при получении категорий' },
+			{ error: 'Не удалось получить категории' },
 			{ status: 500 }
 		)
 	}

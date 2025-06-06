@@ -86,17 +86,18 @@ export default function NewPlacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 pt-24">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background p-3 sm:p-6 pt-16 sm:pt-24">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Шапка */}
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => router.push("/admin/places")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад к списку
+        <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-4">
+          <Button variant="outline" onClick={() => router.push("/admin/places")} size="sm">
+            <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Назад к списку</span>
+            <span className="sm:hidden">Назад</span>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Добавить новое место</h1>
-            <p className="text-muted-foreground">Заполните информацию о месте</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Добавить новое место</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Заполните информацию о месте</p>
           </div>
         </div>
 
@@ -104,11 +105,11 @@ export default function NewPlacePage() {
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>Основная информация</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Основная информация</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
               {/* Основные поля */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Название *</Label>
                   <Input
@@ -132,7 +133,7 @@ export default function NewPlacePage() {
               </div>
 
               {/* Координаты */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="lat">Широта *</Label>
                   <Input
@@ -160,7 +161,7 @@ export default function NewPlacePage() {
               </div>
 
               {/* Категория и адрес */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="categoryName">Категория</Label>
                   <Input
@@ -205,7 +206,7 @@ export default function NewPlacePage() {
               </div>
 
               {/* Дополнительные поля */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="imageUrl">URL изображения</Label>
                   <Input
@@ -237,15 +238,17 @@ export default function NewPlacePage() {
               </div>
 
               {/* Кнопки */}
-              <div className="flex justify-end gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/admin/places")}
+                  className="w-full sm:w-auto"
+                  size="sm"
                 >
                   Отмена
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} className="w-full sm:w-auto" size="sm">
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? "Сохранение..." : "Сохранить"}
                 </Button>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Header from "@/components/Header";
 import { AppProvider } from "@/components/providers/AppProvider";
@@ -186,7 +187,8 @@ export default function RootLayout({
         {/* Yandex.Metrika counter - noscript tag */}
         <noscript>
           <div>
-            <img src="https://mc.yandex.ru/watch/102318371" alt="" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://mc.yandex.ru/watch/102318371" alt="" width="1" height="1" style={{position: 'absolute', left: '-9999px'}} />
           </div>
         </noscript>
         {/* /Yandex.Metrika counter */}

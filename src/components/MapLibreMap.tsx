@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // Импортируем MapLibre Inspector только для development
@@ -9,6 +9,13 @@ import MaplibreInspect from "@maplibre/maplibre-gl-inspect";
 import { Protocol, PMTiles } from "pmtiles";
 import type { FeatureCollection, Point } from "geojson";
 import { Place } from "@prisma/client";
+import { 
+  loadAllCategoryIcons, 
+  getCategoryIconExpression,
+  getCategoryIconId,
+  loadMapIcon,
+  loadFallbackIcon
+} from "@/lib/utils/map-icons";
 
 interface Props {
   places: Place[];
@@ -98,47 +105,103 @@ function placesToGeoJSON(places: Place[]): FeatureCollection<Point> {
     };
   }
 
-  return {
-    type: "FeatureCollection",
-    features: places
-      .filter((place) => {
-        // Валидируем, что у места есть все необходимые данные
-        const hasValidCoords = typeof place.lat === "number" && typeof place.lng === "number" 
-          && !isNaN(place.lat) && !isNaN(place.lng)
-          && place.lat >= -90 && place.lat <= 90 
-          && place.lng >= -180 && place.lng <= 180;
-        const hasId = place.id;
-        const hasTitle = place.title;
-        
-        if (!hasValidCoords) {
-          console.warn('⚠️ Место с некорректными координатами:', {
+  console.log('🔧 Обрабатываем places в GeoJSON:', places.length);
+  let invalidPlaces = 0;
+
+  const validFeatures = places
+    .filter((place) => {
+      // Валидируем, что у места есть все необходимые данные
+      const hasValidCoords = typeof place.lat === "number" && typeof place.lng === "number" 
+        && !isNaN(place.lat) && !isNaN(place.lng)
+        && place.lat >= -90 && place.lat <= 90 
+        && place.lng >= -180 && place.lng <= 180;
+      const hasId = place.id;
+      const hasTitle = place.title;
+      
+      if (!hasValidCoords || !hasId || !hasTitle) {
+        invalidPlaces++;
+        if (invalidPlaces <= 3) { // Показываем первые 3 ошибки
+          console.warn('⚠️ Отклоняем место:', {
             id: place.id,
             title: place.title,
             lat: place.lat,
-            lng: place.lng
+            lng: place.lng,
+            hasValidCoords,
+            hasId,
+            hasTitle
           });
         }
-        
-        if (!hasId) {
-          console.warn('⚠️ Место без ID:', place);
+        return false;
+      }
+      
+      return true;
+    })
+    .map((place) => {
+      // Создаем полностью очищенные properties без null значений
+      const cleanProperties: Record<string, unknown> = {};
+      
+      // Копируем все properties и заменяем null на safe значения
+      Object.entries(place).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          // Определяем тип по ключу и ставим безопасное значение
+          switch (key) {
+            case 'totalScore':
+            case 'reviewsCount':
+            case 'lat':
+            case 'lng':
+              cleanProperties[key] = 0;
+              break;
+            case 'temporarilyClosed':
+              cleanProperties[key] = false;
+              break;
+            case 'categories':
+              cleanProperties[key] = [];
+              break;
+            default:
+              cleanProperties[key] = '';
+          }
+        } else {
+          // Дополнительная проверка на числовые поля
+          if ((key === 'totalScore' || key === 'reviewsCount' || key === 'lat' || key === 'lng') && 
+              (typeof value !== 'number' || isNaN(value as number))) {
+            cleanProperties[key] = 0;
+          } else {
+            cleanProperties[key] = value;
+          }
         }
-        
-        if (!hasTitle) {
-          console.warn('⚠️ Место без названия:', place.id);
+      });
+      
+      // Дополнительная защита - убеждаемся что критически важные поля числовые
+      ['totalScore', 'reviewsCount', 'lat', 'lng'].forEach(numField => {
+        if (typeof cleanProperties[numField] !== 'number' || isNaN(cleanProperties[numField])) {
+          cleanProperties[numField] = 0;
         }
-        
-        return hasValidCoords && hasId && hasTitle;
-      })
-      .map((place) => ({
-        type: "Feature",
+      });
+      
+      // Специальная обработка categoryName
+      if (!cleanProperties.categoryName || cleanProperties.categoryName === '') {
+        cleanProperties.categoryName = 'Прочее';
+      }
+
+      return {
+        type: "Feature" as const,
         geometry: {
-          type: "Point",
-          coordinates: [place.lng, place.lat],
+          type: "Point" as const,
+          coordinates: [place.lng, place.lat] as [number, number],
         },
-        properties: {
-          ...place,
-        },
-      })),
+        properties: cleanProperties,
+      };
+    });
+
+  if (invalidPlaces > 0) {
+    console.warn(`⚠️ Отклонено ${invalidPlaces} некорректных мест из ${places.length}`);
+  }
+  
+  console.log(`✅ Создано ${validFeatures.length} валидных features для карты`);
+
+  return {
+    type: "FeatureCollection",
+    features: validFeatures,
   };
 }
 
@@ -149,6 +212,124 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
   const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sourceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isFirstRender, setIsFirstRender] = useState(true);
+  const [categoryMapping, setCategoryMapping] = useState<Record<string, { fileName: string; path: string }>>({});
+  const [iconsLoaded, setIconsLoaded] = useState(false);
+
+  // Отдельная функция для обработчика styleimagemissing для удобства удаления
+  const handleStyleImageMissing = useCallback(async (e: { id: string }) => {
+    const id = e.id;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    console.log('🔍 Запрошена отсутствующая иконка:', id);
+
+    // Обработка иконок категорий
+    if (id.startsWith('category-')) {
+      if (id === 'category-fallback') {
+        console.log('🎨 Загружаем fallback иконку через styleimagemissing');
+        // Загружаем fallback иконку как оранжевый круг
+        try {
+          await loadFallbackIcon(map);
+        } catch (err) {
+          console.error("❌ Ошибка загрузки fallback иконки:", err);
+        }
+      } else {
+        // Пытаемся найти соответствующую категорию и загрузить её иконку
+        const categoryName = Object.keys(categoryMapping).find(name => 
+          getCategoryIconId(name) === id
+        );
+        
+        if (categoryName && categoryMapping[categoryName]) {
+          const iconPath = categoryMapping[categoryName].path;
+          console.log(`🎨 Загружаем недостающую иконку ${id} из ${iconPath}`);
+          try {
+            await loadMapIcon(map, id, iconPath);
+          } catch (err) {
+            console.error(`❌ Ошибка загрузки иконки категории ${id}:`, err);
+            // Если не удалось загрузить иконку категории, загружаем fallback
+            await loadFallbackIcon(map);
+          }
+        } else {
+          console.log(`⚠️ Категория для ${id} не найдена, загружаем fallback`);
+          // Если категория не найдена, загружаем fallback
+          try {
+            await loadFallbackIcon(map);
+          } catch (err) {
+            console.error(`❌ Ошибка загрузки fallback иконки для ${id}:`, err);
+          }
+        }
+      }
+    }
+    // Обработка старых иконок (для совместимости)
+    else {
+      console.log(`⚠️ Запрошена неизвестная иконка ${id}, загружаем fallback`);
+      try {
+        await loadFallbackIcon(map);
+      } catch (err) {
+        console.error(`❌ Ошибка загрузки fallback для неизвестной иконки ${id}:`, err);
+      }
+    }
+  }, [categoryMapping]);
+
+  // Загружаем маппинг категорий при инициализации
+  useEffect(() => {
+    const loadCategoryMapping = async () => {
+      try {
+        const response = await fetch('/api/categories/mapping');
+        if (response.ok) {
+          const mapping = await response.json();
+          setCategoryMapping(mapping);
+          console.log('✅ Маппинг категорий загружен:', mapping);
+        } else {
+          console.error('❌ Ошибка загрузки маппинга категорий');
+        }
+      } catch (error) {
+        console.error('❌ Ошибка при запросе маппинга категорий:', error);
+      }
+    };
+
+    loadCategoryMapping();
+  }, []);
+
+  // Загружаем иконки когда маппинг категорий готов и карта инициализирована
+  useEffect(() => {
+    const loadIcons = async () => {
+      const map = mapInstanceRef.current;
+      if (!map || !mapReady || Object.keys(categoryMapping).length === 0 || iconsLoaded) {
+        console.log('⏭️ Пропускаем загрузку иконок:', {
+          mapExists: !!map,
+          mapReady,
+          categoryMappingCount: Object.keys(categoryMapping).length,
+          iconsLoaded
+        });
+        return;
+      }
+
+      console.log('🎨 Загружаем иконки категорий после готовности карты...');
+      try {
+        // Загружаем fallback если еще не загружен
+        if (!map.hasImage('category-fallback')) {
+          await loadFallbackIcon(map);
+        }
+        
+        await loadAllCategoryIcons(map, categoryMapping);
+        setIconsLoaded(true);
+        
+        // Обновляем слой с иконками если он уже существует
+        if (map.getLayer("unclustered-point")) {
+          const newExpression = getCategoryIconExpression(categoryMapping);
+          console.log('🔄 Обновляем слой с новыми иконками, expression:', newExpression);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          map.setLayoutProperty("unclustered-point", "icon-image", newExpression as any);
+          console.log('✅ Слой обновлен с новыми иконками');
+        }
+      } catch (error) {
+        console.error('❌ Ошибка загрузки иконок:', error);
+      }
+    };
+
+    loadIcons();
+  }, [categoryMapping, mapReady, iconsLoaded]); // categoryMapping и iconsLoaded используются внутри
 
   // Фильтрация через GPU когда карта готова
   useEffect(() => {
@@ -179,26 +360,13 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
         filteredPlaces: places.length
       });
 
-      // Для простоты показываем все переданные места без дополнительной фильтрации
-      // Строим MapLibre expression для фильтрации на GPU
-      const filterExpression = null; // Показываем все места
-      console.log('🔍 Filter expression:', filterExpression);
+      // ИСПРАВЛЕНИЕ: НЕ сбрасываем встроенные фильтры слоев!
+      // Встроенные фильтры кластеризации должны работать автоматически:
+      // - clusters: ["has", "point_count"] - только кластеры  
+      // - unclustered-point: ["!", ["has", "point_count"]] - только отдельные места
+      // - cluster-count: ["has", "point_count"] - текст только для кластеров
       
-      // Применяем фильтр ко всем слоям одновременно с дополнительными проверками
-      ['unclustered-point', 'clusters', 'cluster-count', 'unclustered-point-text'].forEach(layerId => {
-        // Дополнительная проверка карты перед каждым использованием
-        const currentMap = mapInstanceRef.current;
-        if (currentMap && currentMap.getLayer && currentMap.getLayer(layerId)) {
-          console.log('🎨 Applying filter to layer:', layerId);
-          try {
-            currentMap.setFilter(layerId, filterExpression);
-          } catch (error) {
-            console.error('❌ Ошибка применения фильтра к слою:', layerId, error);
-          }
-        } else {
-          console.log('⚠️ Слой не найден или карта недоступна:', layerId);
-        }
-      });
+      console.log('✅ Фильтрация завершена - используем встроенные фильтры слоев');
     }, isFirstRender ? 0 : 50); // Для первого рендера без задержки, потом 50ms
     
     // Cleanup функция
@@ -207,7 +375,7 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
         clearTimeout(filterTimeoutRef.current);
       }
     };
-  }, [places, mapReady, isFirstRender]); // Добавляем isFirstRender в зависимости
+  }, [places, mapReady, isFirstRender]); // places, mapReady и isFirstRender используются
 
   // Обновляем источник данных карты при изменении places
   useEffect(() => {
@@ -225,11 +393,46 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
       }
       
       try {
+        // Дополнительная проверка что карта полностью готова
+        if (!map.isStyleLoaded || !map.isStyleLoaded()) {
+          console.log('⏳ Стиль карты еще загружается, пропускаем обновление');
+          return;
+        }
+        
         const source = map.getSource("places") as maplibregl.GeoJSONSource;
         if (source && source.setData) {
           console.log('🔄 Обновляем источник карты с данными:', places.length, 'мест');
-          // Используем актуальные places напрямую
-          source.setData(placesToGeoJSON(places));
+          const geoJsonData = placesToGeoJSON(places);
+          source.setData(geoJsonData);
+          
+          // Принудительно обновляем слой иконок после обновления данных
+          setTimeout(() => {
+            const currentMap = mapInstanceRef.current;
+            if (currentMap && currentMap.isStyleLoaded && currentMap.isStyleLoaded() && currentMap.getLayer && currentMap.getLayer("unclustered-point") && iconsLoaded && Object.keys(categoryMapping).length > 0) {
+              console.log('🔄 Принудительно обновляем слой unclustered-point с иконками');
+              try {
+                // Временно скрываем слой
+                currentMap.setLayoutProperty("unclustered-point", "visibility", "none");
+                
+                // Через небольшую задержку показываем снова с обновленным expression
+                setTimeout(() => {
+                  const finalMap = mapInstanceRef.current;
+                  if (finalMap && finalMap.isStyleLoaded && finalMap.isStyleLoaded() && finalMap.getLayer && finalMap.getLayer("unclustered-point")) {
+                    const currentExpression = getCategoryIconExpression(categoryMapping);
+                    console.log('🔄 Обновляем expression на:', currentExpression);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    finalMap.setLayoutProperty("unclustered-point", "icon-image", currentExpression as any);
+                    finalMap.setLayoutProperty("unclustered-point", "visibility", "visible");
+                    console.log('✅ Слой unclustered-point обновлен и показан');
+                  }
+                }, 100);
+              } catch (updateError) {
+                console.error('❌ Ошибка обновления слоя:', updateError);
+              }
+            } else {
+              console.log('⏭️ Пропускаем обновление слоя: карта, слой или иконки не готовы');
+            }
+          }, 200);
         } else {
           console.log('⚠️ Источник данных карты не найден');
         }
@@ -244,7 +447,7 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
         clearTimeout(sourceUpdateTimeoutRef.current);
       }
     };
-  }, [mapReady, places]); // Реагируем на готовность карты И сами places
+  }, [mapReady, places, categoryMapping, iconsLoaded]); // Реагируем на готовность карты И сами places
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -339,10 +542,46 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
       console.warn('⚠️ Ошибка карты:', e.error);
     });
 
-    map.on("load", () => {
+    map.on("load", async () => {
       console.log('🗺️ Инициализируем карту');
       
-      // Проверяем, что источник еще не существует
+      // ШАГ 1: Всегда загружаем fallback иконку первой
+      console.log('🎨 Загружаем fallback иконку...');
+      await loadFallbackIcon(map);
+      
+      // ШАГ 2: ЖДЕМ categoryMapping если он еще не загружен
+      let finalCategoryMapping = categoryMapping;
+      if (Object.keys(categoryMapping).length === 0) {
+        console.log('⏳ categoryMapping пустой, ждем загрузки...');
+        // Даем время на загрузку categoryMapping
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Проверяем снова
+        if (Object.keys(categoryMapping).length > 0) {
+          finalCategoryMapping = categoryMapping;
+          console.log('✅ categoryMapping загружен после ожидания:', Object.keys(finalCategoryMapping).length, 'категорий');
+        } else {
+          console.log('⚠️ categoryMapping все еще пустой, используем fallback');
+          finalCategoryMapping = {};
+        }
+      }
+      
+      // ШАГ 3: Загружаем иконки категорий если маппинг готов
+      if (Object.keys(finalCategoryMapping).length > 0) {
+        console.log('🎨 Загружаем иконки категорий...');
+        await loadAllCategoryIcons(map, finalCategoryMapping);
+        setIconsLoaded(true);
+        console.log('✅ Все иконки загружены, finalCategoryMapping имеет', Object.keys(finalCategoryMapping).length, 'категорий');
+      } else {
+        console.log('⚠️ Используем только fallback иконку');
+      }
+      
+      // ШАГ 3: Проверяем, что источник еще не существует
+      // Дополнительная проверка готовности карты
+      if (!map.isStyleLoaded || !map.isStyleLoaded()) {
+        console.log('⏳ Ждем полной загрузки стиля карты...');
+        return;
+      }
+      
       if (!map.getSource("places")) {
         // Добавляем GeoJSON-источник с кластеризацией
         map.addSource("places", {
@@ -356,46 +595,10 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
       }
 
       // Добавляем слои только если они еще не существуют
-      // ВАЖНО: Порядок слоев критически важен! Кластеры ВЫШЕ одиночных точек
+      // ВАЖНО: Порядок слоев критически важен! Кластеры СНИЗУ, иконки СВЕРХУ
       
-      if (!map.getLayer("unclustered-point")) {
-        // Слой одиночных маркеров - ДОБАВЛЯЕМ ПЕРВЫМ (нижний уровень)
-        map.addLayer({
-          id: "unclustered-point",
-          type: "circle",
-          source: "places",
-          filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-color": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              "#3B82F6",
-              "#5783FF"
-            ],
-            "circle-radius": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              4, 7,
-              10, 9,
-              15, 12
-            ],
-            "circle-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              0, 0.9,
-              22, 1
-            ],
-            "circle-stroke-width": 0,
-            "circle-stroke-opacity": 0
-          }
-        });
-        console.log('✅ Слой "unclustered-point" добавлен (нижний уровень)');
-      }
-
-      if (!map.getLayer("clusters")) {
-        // Слой кластеров - ДОБАВЛЯЕМ ВТОРЫМ (выше одиночных точек)
+      if (map.getLayer && !map.getLayer("clusters")) {
+        // Слой кластеров - ДОБАВЛЯЕМ ПЕРВЫМ (нижний уровень)
         map.addLayer({
           id: "clusters",
           type: "circle",
@@ -424,56 +627,11 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
             "circle-sort-key": ["get", "point_count"]
           }
         });
-        console.log('✅ Слой "clusters" добавлен (верхний уровень)');
+        console.log('✅ Слой "clusters" добавлен (нижний уровень)');
       }
 
-      // ТЕКСТОВЫЕ СЛОИ - добавляем поверх всех circle слоев
-      
-      if (!map.getLayer("unclustered-point-text")) {
-        // Слой текста для маркеров
-        map.addLayer({
-          id: "unclustered-point-text",
-          type: "symbol",
-          source: "places",
-          filter: ["!", ["has", "point_count"]],
-          layout: {
-            "text-field": ["get", "title"],
-            "text-font": ["Noto Sans Bold"],
-            "text-offset": [0, 1.5],
-            "text-size": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              8, 11,
-              12, 13,
-              15, 16
-            ],
-            "text-anchor": "top",
-            "text-max-width": 10,
-            "text-allow-overlap": false,
-            "text-ignore-placement": false,
-            "symbol-sort-key": ["literal", 999]
-          },
-          paint: {
-            "text-color": "#1F2937",
-            "text-halo-color": "#ffffff",
-            "text-halo-width": 2,
-            "text-halo-blur": 1,
-            "text-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              8, 0,
-              10, 0.9,
-              22, 1
-            ]
-          }
-        });
-        console.log('✅ Слой "unclustered-point-text" добавлен');
-      }
-
-      if (!map.getLayer("cluster-count")) {
-        // Слой текста для кластеров - ВЕРХНИЙ уровень
+      if (map.getLayer && !map.getLayer("cluster-count")) {
+        // Слой текста для кластеров - СРЕДНИЙ уровень
         map.addLayer({
           id: "cluster-count",
           type: "symbol",
@@ -499,7 +657,75 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
             "text-halo-width": 0
           }
         });
-        console.log('✅ Слой "cluster-count" добавлен (топ уровень)');
+        console.log('✅ Слой "cluster-count" добавлен (средний уровень)');
+      }
+
+      if (map.getLayer && !map.getLayer("unclustered-point")) {
+        // Слой одиночных маркеров с иконками - ДОБАВЛЯЕМ ПОСЛЕДНИМ (верхний уровень)
+        map.addLayer({
+          id: "unclustered-point",
+          type: "symbol",
+          source: "places",
+          filter: ["!", ["has", "point_count"]],
+          layout: {
+            "icon-image": (() => {
+              const expression = getCategoryIconExpression(finalCategoryMapping);
+              console.log('🎨 Используем icon-image expression:', expression);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              return expression as any; // MapLibre expression typing
+            })(),
+            "icon-size": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              4, 0.4,
+              10, 0.6,
+              15, 0.8
+            ],
+            "icon-allow-overlap": false,
+            "icon-ignore-placement": false,
+            "symbol-sort-key": ["literal", 2000], // Высокий приоритет для иконок
+            // Добавляем текст к иконкам
+            "text-field": ["get", "title"],
+            "text-font": ["Noto Sans Bold"],
+            "text-offset": [0, 2],
+            "text-size": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              8, 10,
+              12, 12,
+              15, 14
+            ],
+            "text-anchor": "top",
+            "text-max-width": 8,
+            "text-allow-overlap": false,
+            "text-ignore-placement": false
+          },
+          paint: {
+            "icon-opacity": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              0, 0.9,
+              22, 1
+            ],
+            // Стили для текста
+            "text-color": "#1F2937",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 2,
+            "text-halo-blur": 1,
+            "text-opacity": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              8, 0,
+              10, 0.9,
+              22, 1
+            ]
+          }
+        });
+        console.log('✅ Слой "unclustered-point" с иконками добавлен (верхний уровень)');
       }
 
             // ============================================================================
@@ -719,8 +945,8 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
         }, 50);
       };
 
-      // Добавляем курсор-палец при наведении на кликабельные слои
-      ['clusters', 'unclustered-point', 'cluster-count'].forEach(layerId => {
+      // Добавляем курсор-палец при наведении на кликабельные слои (в правильном порядке приоритета)
+      ['unclustered-point', 'cluster-count', 'clusters'].forEach(layerId => {
         map.on("mouseenter", layerId, () => { 
           const canvas = map.getCanvas();
           if (canvas) canvas.style.cursor = "pointer"; 
@@ -730,6 +956,31 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
           if (canvas) canvas.style.cursor = ""; 
         });
       });
+
+      // Отладка слоев - проверяем что именно отображается
+      setTimeout(() => {
+        if (map.isStyleLoaded()) {
+          console.log('🔍 ОТЛАДКА СЛОЕВ:');
+          console.log('📊 Источник places:', map.getSource('places'));
+          
+          // Проверяем загруженные изображения
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const loadedImages = Object.keys((map as any).style.imageManager.images || {});
+          console.log('🖼️ Загруженные изображения:', loadedImages.filter(img => img.startsWith('category')));
+          
+          // Проверяем видимость слоев
+          ['unclustered-point', 'clusters', 'cluster-count'].forEach(layerId => {
+            const layer = map.getLayer(layerId);
+            if (layer) {
+              console.log(`🎨 Слой ${layerId}:`, {
+                type: layer.type,
+                visibility: map.getLayoutProperty(layerId, 'visibility'),
+                iconImage: layerId === 'unclustered-point' ? map.getLayoutProperty(layerId, 'icon-image') : 'N/A'
+              });
+            }
+          });
+        }
+      }, 1000);
 
       // Карта полностью готова к работе
       console.log('✅ Карта инициализирована и готова к фильтрации');
@@ -811,27 +1062,7 @@ export default function MapLibreMap({ places, onPlaceSelect }: Props) {
         }
       }
     };
-  }, [onPlaceSelect]); // Убираем places из dependency!
-
-  // Отдельная функция для обработчика styleimagemissing для удобства удаления
-  const handleStyleImageMissing = (e: { id: string }) => {
-    const id = e.id;
-     if (id === "custom-marker") {
-        // @ts-expect-error maplibre-gl types issue
-        mapInstanceRef.current?.loadImage("/custom-marker.png", function (
-          error: Error | null,
-          image: HTMLImageElement | ImageBitmap | undefined
-        ) {
-          if (error || !image) {
-            console.error("Ошибка загрузки иконки в styleimagemissing:", error);
-            return;
-          }
-          if (mapInstanceRef.current && !mapInstanceRef.current.hasImage(id)) {
-             mapInstanceRef.current.addImage(id, image, { sdf: false });
-          }
-        });
-      }
-  };
+  }, [onPlaceSelect, categoryMapping, handleStyleImageMissing]); // onPlaceSelect и categoryMapping используются
 
   return <div 
     ref={mapRef} 

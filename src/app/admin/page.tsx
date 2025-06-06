@@ -60,18 +60,18 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 pt-24">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-3 sm:p-6 pt-16 sm:pt-24">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Шапка */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-2">
+        <div className="flex flex-col gap-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-600 rounded-lg">
-                <Settings className="w-6 h-6 text-white" />
+                <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Админ панель</h1>
-                <p className="text-slate-600">Управление приложением VisitVostok</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Админ панель</h1>
+                <p className="text-sm sm:text-base text-slate-600">Управление приложением VisitVostok</p>
               </div>
             </div>
             <Badge variant="secondary" className="w-fit">
@@ -79,12 +79,12 @@ export default function AdminPage() {
               Система активна
             </Badge>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.open('/', '_blank')}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:self-end sm:-mt-16">
+            <Button variant="outline" onClick={() => window.open('/', '_blank')} size="sm">
               <Home className="w-4 h-4 mr-2" />
               На сайт
             </Button>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} size="sm">
               <LogOut className="w-4 h-4 mr-2" />
               Выйти
             </Button>
@@ -92,7 +92,7 @@ export default function AdminPage() {
         </div>
 
         {/* Основная статистика */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -200,35 +200,35 @@ export default function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <Button 
                 variant="outline" 
-                className="h-24 flex-col gap-2 relative group hover:shadow-md transition-all border-blue-200 hover:border-blue-300"
+                className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 relative group hover:shadow-md transition-all border-blue-200 hover:border-blue-300"
                 onClick={() => router.push('/admin/places')}
               >
-                <MapPin className="w-6 h-6 text-blue-600" />
-                <span className="font-medium">Управление местами</span>
-                <Badge variant="secondary" className="absolute top-2 right-2 text-xs">
+                <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                <span className="text-sm sm:text-base font-medium text-center px-2">Управление местами</span>
+                <Badge variant="secondary" className="absolute top-1 sm:top-2 right-1 sm:right-2 text-xs">
                   {statsLoading ? '---' : stats?.totalPlaces || 0}
                 </Badge>
               </Button>
 
               <Button 
                 variant="outline" 
-                className="h-24 flex-col gap-2 hover:shadow-md transition-all border-purple-200 hover:border-purple-300"
+                className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 hover:shadow-md transition-all border-purple-200 hover:border-purple-300"
                 onClick={() => window.open('/activities', '_blank')}
               >
-                <Activity className="w-6 h-6 text-purple-600" />
-                <span className="font-medium">Страница активностей</span>
+                <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                <span className="text-sm sm:text-base font-medium text-center px-2">Страница активностей</span>
               </Button>
 
               <Button 
                 variant="outline" 
-                className="h-24 flex-col gap-2 hover:shadow-md transition-all"
+                className="h-16 sm:h-20 lg:h-24 flex-col gap-1 sm:gap-2 hover:shadow-md transition-all sm:col-span-2 lg:col-span-1"
                 disabled
               >
-                <Users className="w-6 h-6 text-gray-400" />
-                <span className="font-medium text-gray-400">Пользователи</span>
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                <span className="text-sm sm:text-base font-medium text-gray-400 text-center px-2">Пользователи</span>
                 <Badge variant="outline" className="text-xs">Скоро</Badge>
               </Button>
             </div>
@@ -265,7 +265,7 @@ export default function AdminPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
               <div className="text-center">
                 <div className="font-medium text-slate-700">Версия</div>
                 <Badge variant="outline" className="mt-1">1.0.0</Badge>

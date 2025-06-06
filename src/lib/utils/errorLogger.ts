@@ -343,13 +343,33 @@ class ErrorLogger {
 
 		// Promise rejections
 		window.addEventListener('unhandledrejection', (event) => {
-			this.error(
-				'Unhandled Promise Rejection',
-				event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
-				{
-					type: 'promise_rejection'
+			let error: Error
+			let message = 'Unhandled Promise Rejection'
+			
+			try {
+				if (event.reason instanceof Error) {
+					error = event.reason
+					message = `Unhandled Promise Rejection: ${event.reason.message}`
+				} else if (typeof event.reason === 'string') {
+					error = new Error(event.reason)
+					message = `Unhandled Promise Rejection: ${event.reason}`
+				} else if (event.reason && typeof event.reason === 'object') {
+					const reasonStr = JSON.stringify(event.reason)
+					error = new Error(reasonStr)
+					message = `Unhandled Promise Rejection: ${reasonStr}`
+				} else {
+					error = new Error(String(event.reason))
+					message = `Unhandled Promise Rejection: ${String(event.reason)}`
 				}
-			)
+			} catch {
+				error = new Error('Unknown promise rejection')
+				message = 'Unhandled Promise Rejection: Unable to parse reason'
+			}
+			
+			this.error(message, error, {
+				type: 'promise_rejection',
+				originalReason: event.reason
+			})
 		})
 
 		// Перед закрытием страницы отправляем оставшиеся логи
