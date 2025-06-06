@@ -5,8 +5,16 @@ export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
 
-    // Простая проверка авторизации
-    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    // В production пароль ОБЯЗАТЕЛЬНО должен быть задан в .env
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    
+    if (!adminPassword) {
+      console.error("ADMIN_PASSWORD не задан в переменных окружения!");
+      return NextResponse.json(
+        { success: false, error: "Ошибка конфигурации сервера" },
+        { status: 500 }
+      );
+    }
 
     if (username === "admin" && password === adminPassword) {
       const response = NextResponse.json({ success: true });

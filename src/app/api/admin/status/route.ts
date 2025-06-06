@@ -5,7 +5,15 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const adminAuth = cookieStore.get("admin-auth");
-    const envPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const envPassword = process.env.ADMIN_PASSWORD;
+
+    if (!envPassword) {
+      console.error("ADMIN_PASSWORD не задан в переменных окружения!");
+      return NextResponse.json(
+        { authenticated: false, error: "Ошибка конфигурации сервера" },
+        { status: 500 }
+      );
+    }
 
     const isAuthenticated = adminAuth?.value === envPassword;
 

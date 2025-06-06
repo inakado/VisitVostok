@@ -12,7 +12,14 @@ export function middleware(request: NextRequest) {
     }
 
     const adminPassword = request.cookies.get("admin-auth")?.value;
-    const envPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const envPassword = process.env.ADMIN_PASSWORD;
+    
+    // Если пароль не задан в .env - блокируем доступ
+    if (!envPassword) {
+      console.error("ADMIN_PASSWORD не задан в переменных окружения!");
+      const loginUrl = new URL("/admin/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
     
     if (!adminPassword || adminPassword !== envPassword) {
       const loginUrl = new URL("/admin/login", request.url);
