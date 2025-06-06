@@ -207,8 +207,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 			error,
 			errorInfo,
 			timestamp: new Date(),
-			userAgent: navigator.userAgent,
-			url: window.location.href
+			userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+			url: typeof window !== 'undefined' ? window.location.href : 'server'
 		}
 
 		this.setState({
@@ -305,6 +305,8 @@ export function AsyncErrorBoundary({ children, onAsyncError, ...props }: AsyncEr
 
 	// Можно расширить функциональность для async ошибок
 	React.useEffect(() => {
+		if (typeof window === 'undefined') return
+
 		const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
 			const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason))
 			handleAsyncError(error)

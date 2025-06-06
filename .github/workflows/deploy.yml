@@ -37,6 +37,7 @@ jobs:
       run: npm run build
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/test_db"
+        SKIP_ENV_VALIDATION: "true"
     
     - name: Run tests (if any)
       run: npm test --if-present
