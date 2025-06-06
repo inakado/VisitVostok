@@ -11,6 +11,7 @@
     "lint": "next lint",
     "test": "echo 'No tests configured yet'",
     "seed": "tsx prisma/seed.ts",
+    "seed-categories": "tsx prisma/seed-categories.ts",
     "check-import-stats": "tsx prisma/check-import-stats.ts",
     "analyze-categories": "tsx scripts/analyze-categories.ts",
     "import-transformed-places": "tsx prisma/import-transformed-places.ts",
