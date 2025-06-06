@@ -8,6 +8,7 @@ const globalForPrisma = globalThis as unknown as {
 const createPrismaClient = () => {
   // Во время build в CI не подключаемся к базе
   if (process.env.SKIP_ENV_VALIDATION === "true" || process.env.NODE_ENV === "test") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return null as any; // Возвращаем mock для CI build
   }
   

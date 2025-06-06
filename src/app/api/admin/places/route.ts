@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 
     // Обработка подкатегорий
     const subcategoriesSet = new Set<string>();
-    allSubcategories.forEach((place) => {
+    allSubcategories.forEach((place: { categories: string[] }) => {
       if (Array.isArray(place.categories)) {
         place.categories.forEach((cat: string) => subcategoriesSet.add(cat));
       }

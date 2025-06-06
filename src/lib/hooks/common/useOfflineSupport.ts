@@ -44,7 +44,7 @@ interface OfflineSupportReturn<T> {
 export function useOfflineSupport<T>(
 	options: UseOfflineSupportOptions<T> = {}
 ): OfflineSupportReturn<T> {
-п	const [isOnline, setIsOnline] = useState(() => {
+	const [isOnline, setIsOnline] = useState(() => {
 		if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
 			return navigator.onLine
 		}

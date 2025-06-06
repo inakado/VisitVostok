@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Activity } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
     });
 
     // Трансформируем данные для фронтенда
-    const transformedActivities = activities.map(activity => ({
+    const transformedActivities = activities.map((activity: Activity) => ({
       id: activity.id,
       title: activity.title,
       description: activity.description,
