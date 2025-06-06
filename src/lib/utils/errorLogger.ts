@@ -161,8 +161,8 @@ class ErrorLogger {
 			context,
 			error,
 			stackTrace: error?.stack,
-			userAgent: this.isBrowser ? navigator?.userAgent : undefined,
-			url: this.isBrowser ? window?.location?.href : undefined,
+			userAgent: this.isBrowser && typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+			url: this.isBrowser && typeof window !== 'undefined' ? window.location?.href : undefined,
 			sessionId: this.sessionId,
 			buildVersion: process.env.NEXT_PUBLIC_BUILD_VERSION || 'unknown'
 		}

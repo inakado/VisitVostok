@@ -65,7 +65,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
               className="hover:bg-gray-800 active:bg-gray-900 transition-all duration-200"
               onClick={() => {
                 try {
-                  if (window.history.length > 1) {
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
                     router.back();
                   } else {
                     router.push('/');
@@ -95,7 +95,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           onClick={() => {
             try {
               // Проверяем есть ли история для возврата
-              if (window.history.length > 1) {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
                 router.back();
               } else {
                 // Если нет истории, переходим на главную
