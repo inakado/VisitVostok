@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   env: {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   },
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
+
   images: {
     remotePatterns: [
       {
