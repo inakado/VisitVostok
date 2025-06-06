@@ -29,15 +29,17 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      
+    - name: Generate Prisma client (skip DB connection)
+      run: npx prisma generate --no-engine
+      env:
+        SKIP_ENV_VALIDATION: "true"
     
     - name: Run linter
       run: npm run lint
     
     - name: Run type check
-      run: npm run build
-      env:
-        DATABASE_URL: "postgresql://user:password@localhost:5432/test_db"
-        SKIP_ENV_VALIDATION: "true"
+      run: npm run build:ci
     
     - name: Run tests (if any)
       run: npm test --if-present

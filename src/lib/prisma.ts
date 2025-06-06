@@ -5,7 +5,14 @@ const globalForPrisma = globalThis as unknown as {
   prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
-const createPrismaClient = () => new PrismaClient().$extends(withAccelerate());
+const createPrismaClient = () => {
+  // Во время build в CI не подключаемся к базе
+  if (process.env.SKIP_ENV_VALIDATION === "true" || process.env.NODE_ENV === "test") {
+    return null as any; // Возвращаем mock для CI build
+  }
+  
+  return new PrismaClient().$extends(withAccelerate());
+};
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 

@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
   },
 
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Mock browser APIs on server
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
+
   images: {
     remotePatterns: [
       {

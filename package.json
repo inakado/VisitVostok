@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:ci": "SKIP_ENV_VALIDATION=true next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "echo 'No tests configured yet'",
     "seed": "tsx prisma/seed.ts",
     "check-import-stats": "tsx prisma/check-import-stats.ts",
     "analyze-categories": "tsx scripts/analyze-categories.ts",

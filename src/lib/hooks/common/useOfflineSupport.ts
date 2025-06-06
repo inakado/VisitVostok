@@ -44,7 +44,12 @@ interface OfflineSupportReturn<T> {
 export function useOfflineSupport<T>(
 	options: UseOfflineSupportOptions<T> = {}
 ): OfflineSupportReturn<T> {
-	const [isOnline, setIsOnline] = useState(navigator.onLine)
+п	const [isOnline, setIsOnline] = useState(() => {
+		if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+			return navigator.onLine
+		}
+		return true // По умолчанию true на сервере
+	})
 	const [connectionQuality, setConnectionQuality] = useState<'good' | 'poor' | 'offline'>('good')
 	const toastHelpers = useToastHelpers()
 
@@ -84,7 +89,7 @@ export function useOfflineSupport<T>(
 		// === ОТКЛЮЧЕНО: Проверка качества соединения через /api/health ===
 		/*
 		const checkConnectionQuality = async () => {
-			if (!navigator.onLine) {
+			if (typeof navigator !== 'undefined' && !navigator.onLine) {
 				setConnectionQuality('offline')
 				return
 			}

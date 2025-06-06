@@ -193,7 +193,7 @@ export function useApi<T>(
 		}
 
 		// Offline fallback
-		if (enableOffline && !navigator.onLine && offlineFallback) {
+		if (enableOffline && typeof navigator !== 'undefined' && !navigator.onLine && offlineFallback) {
 			setState({
 				data: offlineFallback as T,
 				isLoading: false,
@@ -374,7 +374,7 @@ export function useApi<T>(
 		reset,
 		clearCache,
 		// Добавляем информацию о подключении
-		isOnline: enableOffline ? offline.isOnline : navigator.onLine,
+		isOnline: enableOffline ? offline.isOnline : (typeof navigator !== 'undefined' ? navigator.onLine : true),
 		connectionQuality: enableOffline ? offline.connectionQuality : 'good'
 	}
 }
